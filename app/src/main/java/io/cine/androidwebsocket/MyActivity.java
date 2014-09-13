@@ -49,6 +49,7 @@ public class MyActivity extends Activity {
     protected void onPause() {
         super.onPause();
         mHandler.removeCallbacks(myTask);
+        mWebSocket.end();
     }
 
     @Override
@@ -57,7 +58,7 @@ public class MyActivity extends Activity {
         setContentView(R.layout.activity_my);
         mHandler = new Handler();
         PeerConnectionFactory.initializeAndroidGlobals(this, true, false);
-        mStartRTC = new StartRTC();
+        mStartRTC = new StartRTC(this);
         go();
     }
 
@@ -154,9 +155,21 @@ public class MyActivity extends Activity {
                             Log.v(TAG, "parsed response");
                             String action = response.getString("action");
                             Log.v(TAG, "action is: "+action);
-                            if (action.equals("allservers")){
+                            if (action.equals("allservers")) {
                                 Log.v(TAG, "GOT ALL SERVERS");
                                 gotAllServers(response);
+                            } else if (action.equals("member")){
+                                Log.v(TAG, "GOT new member");
+                                gotNewMember(response);
+                            } else if (action.equals("offer")){
+                                Log.v(TAG, "GOT new offer");
+                                gotNewOffer(response);
+                            } else if (action.equals("answer")){
+                                Log.v(TAG, "GOT new answer");
+                                gotNewAnswer(response);
+                            } else if (action.equals("ice")){
+                                Log.v(TAG, "GOT new ice");
+                                gotNewIce(response);
                             } else {
                                 Log.v(TAG, "Unknown action");
                             }
@@ -170,6 +183,44 @@ public class MyActivity extends Activity {
         });
 
     }
+
+    private void gotNewIce(JSONObject response) {
+        try {
+            String otherClientSparkId = response.getString("sparkId");
+
+            mStartRTC.newIce(otherClientSparkId, response.getJSONObject("candidate"));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void gotNewOffer(JSONObject response) {
+        try {
+            String otherClientSparkId = response.getString("sparkId");
+            mStartRTC.newOffer(otherClientSparkId, response.getJSONObject("offer"));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    private void gotNewAnswer(JSONObject response) {
+
+    }
+
+    //    "{\"action\":\"member\",\"room\":\"hello\",\"sparkId\":\"5fa684d5-708b-4674-b548-b8b12011aa02\"}"
+    private void gotNewMember(JSONObject response) {
+        try {
+            String otherClientSparkId = response.getString("sparkId");
+            mStartRTC.newMember(otherClientSparkId);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+
 
     private void handleOpen() {
         joinRoom("hello");
