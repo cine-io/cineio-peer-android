@@ -26,12 +26,20 @@ public class StartRTC {
     private final Activity mActivity;
 
     private ArrayList<PeerConnection.IceServer> servers;
-    private PeerConnectionFactory factory;
+    private static PeerConnectionFactory factory;
     private boolean mIsInitiator;
     private PeerConnection peerConnection;
 
     public MediaConstraints getConstraints() {
         return constraints;
+    }
+
+    public static PeerConnectionFactory getFactory(){
+        if (factory != null){
+            return factory;
+        }
+        factory = new PeerConnectionFactory();
+        return factory;
     }
 
     private MediaConstraints constraints;
@@ -45,6 +53,7 @@ public class StartRTC {
     public void setSignalingConnection(WebSocket ws){
         this.mWebSocket = ws;
     }
+
     public void addIceServer(String iceServer){
         servers.add(new PeerConnection.IceServer(iceServer));
     }
@@ -55,10 +64,10 @@ public class StartRTC {
 
     public PeerConnection createPeerConnection(String otherClientSparkId, boolean isInitiator){
         mIsInitiator = isInitiator;
-        final PeerObserver observer = new PeerObserver();
+        final PeerObserver observer = new PeerObserver(this, otherClientSparkId);
 
         peerConnection = factory.createPeerConnection(servers, constraints, observer);
-        peerConnection.addStream(mediaStream, constraints);
+        peerConnection.addStream(mediaStream, new MediaConstraints());
 
 //        peerConnection.createOffer(new SdpObserver() {
 //            @Override
@@ -90,8 +99,6 @@ public class StartRTC {
     }
 
     public void start() {
-        factory = new PeerConnectionFactory();
-
         constraints = new MediaConstraints();
 
         constraints.mandatory.add(new MediaConstraints.KeyValuePair(
@@ -100,13 +107,16 @@ public class StartRTC {
                 "OfferToReceiveVideo", "true"));
 
         constraints.optional.add(new MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"));
-
-        mediaStream = factory.createLocalMediaStream("ARDAMS");
-        AudioTrack track = factory.createAudioTrack("ARDAMSa0", factory.createAudioSource(constraints));
-        mediaStream.addTrack(track);
     }
 
     public void sendMessage(JSONObject j) {
+        try {
+            j.put("source", "android");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        Log.d(TAG, "SENDING STUFF: "+j.toString());
+
         mWebSocket.send(j.toString());
     }
 
@@ -156,5 +166,9 @@ public class StartRTC {
             e.printStackTrace();
         }
 
+    }
+
+    public void setMediaStream(MediaStream mediaStream) {
+        this.mediaStream = mediaStream;
     }
 }

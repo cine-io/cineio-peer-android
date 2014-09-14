@@ -2,6 +2,8 @@ package io.cine.androidwebsocket;
 
 import android.util.Log;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.webrtc.DataChannel;
 import org.webrtc.IceCandidate;
 import org.webrtc.MediaStream;
@@ -12,6 +14,13 @@ import org.webrtc.PeerConnection;
  */
 class PeerObserver implements PeerConnection.Observer {
     private static final String TAG = "PeerObserver";
+    private final StartRTC mStartRTC;
+    private final String mOtherClientSparkId;
+
+    public PeerObserver(StartRTC startRTC, String otherClientSparkId) {
+        mStartRTC = startRTC;
+        mOtherClientSparkId = otherClientSparkId;
+    }
 
     @Override
     public void onSignalingChange(PeerConnection.SignalingState newState) {
@@ -30,7 +39,24 @@ class PeerObserver implements PeerConnection.Observer {
 
     @Override
     public void onIceCandidate(IceCandidate candidate) {
+
         Log.d(TAG, "onIceCandidate");
+        try {
+            JSONObject candidateObject = new JSONObject();
+            candidateObject.put("candidate", candidate.sdp);
+            candidateObject.put("sdpMid", candidate.sdpMid);
+            candidateObject.put("sdpMLineIndex", candidate.sdpMLineIndex);
+            JSONObject j = new JSONObject();
+            j.put("action", "ice");
+            JSONObject candidateMiddleMan = new JSONObject();
+            candidateMiddleMan.put("candidate", candidateObject);
+            j.put("candidate", candidateMiddleMan);
+            j.put("sparkId", mOtherClientSparkId);
+            j.put("source", "android");
+            mStartRTC.sendMessage(j);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
