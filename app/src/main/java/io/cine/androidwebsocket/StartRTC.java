@@ -23,7 +23,7 @@ import java.util.ArrayList;
 public class StartRTC {
     private static final String TAG = "StartRTC";
     private SDPObserver sdpObserver;
-    private final Activity mActivity;
+    private final MyActivity mActivity;
 
     private ArrayList<PeerConnection.IceServer> servers;
     private static PeerConnectionFactory factory;
@@ -46,7 +46,7 @@ public class StartRTC {
     private WebSocket mWebSocket;
     private MediaStream mediaStream;
 
-    public StartRTC(Activity activity){
+    public StartRTC(MyActivity activity){
         mActivity = activity;
         servers = new ArrayList<PeerConnection.IceServer>();
     }
@@ -64,7 +64,7 @@ public class StartRTC {
 
     public PeerConnection createPeerConnection(String otherClientSparkId, boolean isInitiator){
         mIsInitiator = isInitiator;
-        final PeerObserver observer = new PeerObserver(this, otherClientSparkId);
+        final PeerObserver observer = new PeerObserver(mActivity, this, otherClientSparkId);
 
         peerConnection = factory.createPeerConnection(servers, constraints, observer);
         peerConnection.addStream(mediaStream, new MediaConstraints());

@@ -61,6 +61,11 @@ public class MyActivity extends Activity {
         }
     }
 
+    public void addStream(MediaStream stream){
+        stream.videoTracks.get(0).addRenderer(
+                new VideoRenderer(remoteRender));
+    }
+
     private void sendToWebsocket(String data){
         data = "[\"" + data + "\"]";
         Log.v(TAG, data);
