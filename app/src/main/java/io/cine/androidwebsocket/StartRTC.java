@@ -124,6 +124,8 @@ public class StartRTC {
         this.mediaStream = mediaStream;
     }
 
+    // notice how close this is to newOffer
+    // an offer is the remote description as is an answer
     public void newAnswer(String otherClientSparkId, JSONObject answerObj) {
         PeerConnection pc = getPeerConnection(otherClientSparkId, false);
         try {
