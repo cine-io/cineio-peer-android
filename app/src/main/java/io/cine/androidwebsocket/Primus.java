@@ -1,5 +1,7 @@
 package io.cine.androidwebsocket;
 
+import android.app.Activity;
+import android.content.Context;
 import android.os.Handler;
 import android.util.Log;
 
@@ -21,23 +23,30 @@ import java.util.Random;
  */
 public class Primus {
     private static final String TAG = "Primus";
+    private final Activity activity;
     private Handler mHandler;
     public WebSocket webSocket;
 
     private final String baseUrl;
     private final static String dictionary = "abcdefghijklmnopqrstuvwxyz0123456789_";
     private final String url;
+
     private PrimusDataCallback dataCallback;
     private PrimusOpenCallback openCallback;
     private PrimusWebSocketCallback websocketCallback;
 
-    private Primus(String baseUrl) {
+    private Primus(Activity activity, String baseUrl) {
+        this.activity = activity;
         this.baseUrl = baseUrl;
         url = generateSignalingUrl();
         Log.v(TAG, url);
         mHandler = new Handler();
+        currentTimerRun = 0;
+        reconnect();
+    }
 
-        connect();
+    public static Primus connect(MyActivity activity, String url){
+        return new Primus(activity, url);
     }
 
     public void setDataCallback(Primus.PrimusDataCallback callback){
@@ -52,9 +61,13 @@ public class Primus {
         this.openCallback = callback;
     }
 
-    private void connect(){
-        String protocol = "ws";
-        AsyncHttpClient.getDefaultInstance().websocket(url, protocol, new AsyncHttpClient.WebSocketConnectCallback() {
+    // TODO: return ws on http and wss on https
+    private String getProtocolFromUrl(){
+        return "ws";
+    }
+
+    private void reconnect(){
+        AsyncHttpClient.getDefaultInstance().websocket(url, getProtocolFromUrl(), new AsyncHttpClient.WebSocketConnectCallback() {
 
             @Override
             public void onCompleted(Exception ex, WebSocket returnedWebsocket) {
@@ -65,10 +78,6 @@ public class Primus {
                     return;
                 }
                 webSocket = returnedWebsocket;
-                mHandler.postDelayed(myTask, 1000);
-                if (websocketCallback != null){
-                    websocketCallback.onWebSocket(webSocket);
-                }
 
                 webSocket.setDataCallback(new DataCallback() {
                     @Override
@@ -129,24 +138,35 @@ public class Primus {
                         }
                     }
                 });
+                scheduleHeartbeat();
+                if (websocketCallback != null){
+                    websocketCallback.onWebSocket(webSocket);
+                }
+
             }
+
         });
+
     }
 
+    private void scheduleHeartbeat(){
+        mHandler.postDelayed(myTask, 1000);
+    }
+
+    private void cancelHeartbeat(){
+        mHandler.removeCallbacks(myTask);
+    }
 
     public void joinRoom(String room) {
         try {
             JSONObject j = new JSONObject();
             j.put("action", "join");
             j.put("room", room);
-            webSocket.send(j.toString());
+            Log.v(TAG, "joining room: "+room);
+            send(j);
         } catch (JSONException e) {
             e.printStackTrace();
         }
-    }
-
-    public static Primus connect(String url){
-        return new Primus(url);
     }
 
     private char randomCharacterFromDictionary(){
@@ -169,14 +189,28 @@ public class Primus {
         String connId = randomStringOfLength(8);
         return baseUrl+"/"+server+"/"+connId+"/websocket";
     }
+
+    private int currentTimerRun;
     Runnable myTask = new Runnable() {
         @Override
         public void run() {
-            String ping = "primus::ping::" + System.currentTimeMillis();
-//            Log.v(TAG, "SENDING PING - " + ping);
-            Log.v(TAG, webSocket.isOpen() ? "socket open" : "socket closed");
-            sendToWebsocket(ping);
-            mHandler.postDelayed(this, 10000);
+            currentTimerRun++;
+            // send a heartbeat every 10 seconds
+            if (!webSocket.isOpen()){
+                currentTimerRun = 0;
+                Log.v(TAG, "Reconnecting to primus");
+                throw new RuntimeException("SOCKET IS CLOSED! FUCKED!");
+            }
+            if (currentTimerRun>=10){
+                currentTimerRun = 0;
+                String ping = "primus::ping::" + System.currentTimeMillis();
+                // Log.v(TAG, "SENDING PING - " + ping);
+                Log.v(TAG, webSocket.isOpen() ? "socket open" : "socket closed");
+                sendToWebsocket(ping);
+            } else {
+//                Log.v(TAG, "did not send ping: "+currentTimerRun);
+            }
+            scheduleHeartbeat();
         }
     };
 
@@ -187,7 +221,36 @@ public class Primus {
     }
 
     public void onPause() {
-        mHandler.removeCallbacks(myTask);
+        cancelHeartbeat();
+        webSocket.end();
+    }
+
+    public void send(final JSONObject j){
+        try {
+            j.put("source", "android");
+            Log.d(TAG, "SENDING STUFF: "+j.toString());
+            activity.runOnUiThread(new Runnable() {
+                public void run() {
+                    try {
+                        webSocket.send(j.toString(4));
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendToOtherSpark(String mOtherClientSparkId, JSONObject j) {
+        try {
+            j.put("sparkId", mOtherClientSparkId);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        send(j);
     }
 
     public static interface PrimusWebSocketCallback {

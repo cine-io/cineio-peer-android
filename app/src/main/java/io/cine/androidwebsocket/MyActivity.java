@@ -4,18 +4,10 @@ import android.app.Activity;
 import android.graphics.Point;
 import android.media.AudioManager;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
-
-import com.koushikdutta.async.ByteBufferList;
-import com.koushikdutta.async.DataEmitter;
-import com.koushikdutta.async.callback.CompletedCallback;
-import com.koushikdutta.async.callback.DataCallback;
-import com.koushikdutta.async.http.AsyncHttpClient;
-import com.koushikdutta.async.http.WebSocket;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -29,13 +21,10 @@ import org.webrtc.VideoRendererGui;
 import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
 
-import java.util.Random;
-
 
 public class MyActivity extends Activity {
     private static final String TAG = "AndroidWebsocketTest";
 
-    private WebSocket mWebSocket;
     private StartRTC mStartRTC;
     private VideoRenderer.Callbacks localRender;
     private VideoRenderer.Callbacks remoteRender;
@@ -43,13 +32,8 @@ public class MyActivity extends Activity {
     private boolean factoryStaticInitialized;
     private MediaStream lMS;
     private Primus primus;
+    private boolean receivedAllServer;
 
-    // Poor-man's assert(): die with |msg| unless |condition| is true.
-    private static void abortUnless(boolean condition, String msg) {
-        if (!condition) {
-            throw new RuntimeException(msg);
-        }
-    }
 
     public void addStream(MediaStream stream){
         stream.videoTracks.get(0).addRenderer(
@@ -60,39 +44,33 @@ public class MyActivity extends Activity {
     protected void onPause() {
         super.onPause();
         primus.onPause();
-        mWebSocket.end();
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        receivedAllServer = false;
         if (!factoryStaticInitialized) {
-            abortUnless(PeerConnectionFactory.initializeAndroidGlobals(
+            RTCHelper.abortUnless(PeerConnectionFactory.initializeAndroidGlobals(
                             this, true, true),
-                    "Failed to initializeAndroidGlobals");
+                    "Failed to initializeAndroidGlobals"
+            );
             factoryStaticInitialized = true;
         }
-        mStartRTC = new StartRTC(this);
         connect();
+        mStartRTC = new StartRTC(this, primus);
         prepareLayout();
         startVideo();
     }
 
     private void connect(){
-        primus = Primus.connect("http://192.168.1.114:8888/primus");
-        primus.setWebSocketCallback(new Primus.PrimusWebSocketCallback(){
-            @Override
-            public void onWebSocket(WebSocket webSocket) {
-                mWebSocket = webSocket;
-                mStartRTC.setSignalingConnection(webSocket);
-            }
-        });
-        primus.setOpenCallback(new Primus.PrimusOpenCallback(){
-            @Override
-            public void onOpen() {
-                primus.joinRoom("hello");
-            }
-        });
+        primus = Primus.connect(this, "http://192.168.1.114:8888/primus");
+
+//        primus.setOpenCallback(new Primus.PrimusOpenCallback() {
+//            @Override
+//            public void onOpen() {
+//            }
+//        });
 
         primus.setDataCallback(new Primus.PrimusDataCallback(){
 
@@ -142,17 +120,7 @@ public class MyActivity extends Activity {
     }
 
 
-    private Toast logToast;
 
-    // Log |msg| and Toast about it.
-    private void logAndToast(String msg) {
-        Log.d(TAG, msg);
-        if (logToast != null) {
-            logToast.cancel();
-        }
-        logToast = Toast.makeText(this, msg, Toast.LENGTH_SHORT);
-        logToast.show();
-    }
 
     private VideoSource videoSource;
 
@@ -176,7 +144,7 @@ public class MyActivity extends Activity {
 
         constraints.optional.add(new MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"));
 
-        logAndToast("Creating local video source...");
+        Log.d(TAG, "Creating local video source...");
         PeerConnectionFactory factory = StartRTC.getFactory();
         Log.v(TAG, "1");
         MediaConstraints blankMediaConstraints = new MediaConstraints();
@@ -219,7 +187,7 @@ public class MyActivity extends Activity {
                     VideoCapturer capturer = VideoCapturer.create(name);
                     Log.v(TAG, "got capturer");
                     if (capturer != null) {
-                        logAndToast("Using camera: " + name);
+                        Log.d(TAG, "Using camera: " + name);
                         return capturer;
                     }
                 }
@@ -250,6 +218,12 @@ public class MyActivity extends Activity {
     }
 
     private void gotNewAnswer(JSONObject response) {
+        try {
+            String otherClientSparkId = response.getString("sparkId");
+            mStartRTC.newAnswer(otherClientSparkId, response.getJSONObject("answer"));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -266,19 +240,23 @@ public class MyActivity extends Activity {
 
 
     private void gotAllServers(JSONObject response) {
+        if (receivedAllServer){
+            return;
+        }
+        receivedAllServer = true;
         try {
             JSONArray allServers = response.getJSONArray("data");
-            for (int i = 0; i < allServers.length(); i++){
+            for (int i = 0; i < allServers.length(); i++) {
                 JSONObject iceServerData = (JSONObject) allServers.get(i);
                 String url = (String) iceServerData.get("url");
-                Log.v(TAG, url);
-                if (url.startsWith("stun:")){
+                if (url.startsWith("stun:")) {
+                    Log.v(TAG, "Addding ice server: "+url);
                     mStartRTC.addIceServer(url);
-                }else{
-                    Log.v(TAG, "did not add ice server");
+                } else {
+                    Log.v(TAG, "did not add ice server: "+ url);
                 }
             }
-            mStartRTC.start();
+            primus.joinRoom("hello");
         } catch (JSONException e) {
             e.printStackTrace();
         }

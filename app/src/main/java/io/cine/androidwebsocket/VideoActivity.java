@@ -20,8 +20,6 @@ import org.webrtc.VideoRendererGui;
 import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
 
-import io.cine.androidwebsocket.R;
-
 public class VideoActivity extends Activity {
 
     private static final String TAG = "VideoActivity";
@@ -66,7 +64,7 @@ public class VideoActivity extends Activity {
 
 
         if (!factoryStaticInitialized) {
-            abortUnless(PeerConnectionFactory.initializeAndroidGlobals(
+            RTCHelper.abortUnless(PeerConnectionFactory.initializeAndroidGlobals(
                             this, true, true),
                     "Failed to initializeAndroidGlobals");
             factoryStaticInitialized = true;
@@ -89,7 +87,7 @@ public class VideoActivity extends Activity {
                 "OfferToReceiveVideo", "true"));
         factory = new PeerConnectionFactory();
 
-        logAndToast("Creating local video source...");
+        Log.d(TAG, "Creating local video source...");
         MediaStream lMS = factory.createLocalMediaStream("ARDAMS");
 //        if (appRtcClient.videoConstraints() != null) {
             VideoCapturer capturer = getVideoCapturer();
@@ -121,7 +119,7 @@ public class VideoActivity extends Activity {
                             ", Orientation " + orientation;
                     VideoCapturer capturer = VideoCapturer.create(name);
                     if (capturer != null) {
-                        logAndToast("Using camera: " + name);
+                        Log.d(TAG, "Using camera: " + name);
                         return capturer;
                     }
                 }
@@ -139,13 +137,6 @@ public class VideoActivity extends Activity {
             videoSourceStopped = true;
         }
     }
-    // Poor-man's assert(): die with |msg| unless |condition| is true.
-    private static void abortUnless(boolean condition, String msg) {
-        if (!condition) {
-            throw new RuntimeException(msg);
-        }
-    }
-
 
     @Override
     public void onResume() {
@@ -155,16 +146,6 @@ public class VideoActivity extends Activity {
             videoSource.restart();
             videoSourceStopped = false;
         }
-    }
-
-    // Log |msg| and Toast about it.
-    private void logAndToast(String msg) {
-        Log.d(TAG, msg);
-        if (logToast != null) {
-            logToast.cancel();
-        }
-        logToast = Toast.makeText(this, msg, Toast.LENGTH_SHORT);
-        logToast.show();
     }
 
     @Override
