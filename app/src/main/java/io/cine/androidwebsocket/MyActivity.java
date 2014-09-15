@@ -35,17 +35,6 @@ import java.util.Random;
 public class MyActivity extends Activity {
     private static final String TAG = "AndroidWebsocketTest";
 
-    private Handler mHandler;
-    Runnable myTask = new Runnable() {
-        @Override
-        public void run() {
-            String ping = "primus::ping::" + System.currentTimeMillis();
-//            Log.v(TAG, "SENDING PING - " + ping);
-//            Log.v(TAG, mWebSocket.isOpen() ? "socket open" : "socket closed");
-            sendToWebsocket(ping);
-            mHandler.postDelayed(this, 10000);
-        }
-    };
     private WebSocket mWebSocket;
     private StartRTC mStartRTC;
     private VideoRenderer.Callbacks localRender;
@@ -53,6 +42,7 @@ public class MyActivity extends Activity {
     private AppRTCGLView vsv;
     private boolean factoryStaticInitialized;
     private MediaStream lMS;
+    private Primus primus;
 
     // Poor-man's assert(): die with |msg| unless |condition| is true.
     private static void abortUnless(boolean condition, String msg) {
@@ -66,23 +56,16 @@ public class MyActivity extends Activity {
                 new VideoRenderer(remoteRender));
     }
 
-    private void sendToWebsocket(String data){
-        data = "[\"" + data + "\"]";
-        Log.v(TAG, data);
-        mWebSocket.send(data);
-    }
-
     @Override
     protected void onPause() {
         super.onPause();
-        mHandler.removeCallbacks(myTask);
+        primus.onPause();
         mWebSocket.end();
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mHandler = new Handler();
         if (!factoryStaticInitialized) {
             abortUnless(PeerConnectionFactory.initializeAndroidGlobals(
                             this, true, true),
@@ -90,9 +73,59 @@ public class MyActivity extends Activity {
             factoryStaticInitialized = true;
         }
         mStartRTC = new StartRTC(this);
+        connect();
         prepareLayout();
         startVideo();
-        go();
+    }
+
+    private void connect(){
+        primus = Primus.connect("http://192.168.1.114:8888/primus");
+        primus.setWebSocketCallback(new Primus.PrimusWebSocketCallback(){
+            @Override
+            public void onWebSocket(WebSocket webSocket) {
+                mWebSocket = webSocket;
+                mStartRTC.setSignalingConnection(webSocket);
+            }
+        });
+        primus.setOpenCallback(new Primus.PrimusOpenCallback(){
+            @Override
+            public void onOpen() {
+                primus.joinRoom("hello");
+            }
+        });
+
+        primus.setDataCallback(new Primus.PrimusDataCallback(){
+
+            @Override
+            public void onData(JSONObject response) {
+                Log.v(TAG, "parsed response");
+                try {
+                    String action = response.getString("action");
+                    Log.v(TAG, "action is: "+action);
+                    if (action.equals("allservers")) {
+                        Log.v(TAG, "GOT ALL SERVERS");
+                        gotAllServers(response);
+                    } else if (action.equals("member")){
+                        Log.v(TAG, "GOT new member");
+                        gotNewMember(response);
+                    } else if (action.equals("offer")){
+                        Log.v(TAG, "GOT new offer");
+                        gotNewOffer(response);
+                    } else if (action.equals("answer")){
+                        Log.v(TAG, "GOT new answer");
+                        gotNewAnswer(response);
+                    } else if (action.equals("ice")){
+                        Log.v(TAG, "GOT new ice");
+                        gotNewIce(response);
+                    } else {
+                        Log.v(TAG, "Unknown action");
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
     }
 
     private void prepareLayout() {
@@ -195,128 +228,6 @@ public class MyActivity extends Activity {
         throw new RuntimeException("Failed to open capturer");
     }
 
-    private char randomCharacterFromDictionary(){
-        String dictionary = "abcdefghijklmnopqrstuvwxyz0123456789_";
-        int rand = (int)(Math.random() * dictionary.length());
-        return dictionary.charAt(rand);
-    }
-
-    private String randomStringOfLength(int length){
-        StringBuilder s = new StringBuilder();
-        for (int i = 0; i < length; i++){
-            s.append(randomCharacterFromDictionary());
-        }
-        return s.toString();
-    }
-
-    // "ws://cine-io-signaling.herokuapp.com/primus/211/b9__ftym/websocket"
-    private String getSignalingUrl(){
-        Random r = new Random();
-        int server = r.nextInt(1000);
-        String connId = randomStringOfLength(8);
-        return "http://192.168.1.114:8888/primus/"+server+"/"+connId+"/websocket";
-    }
-
-    private void go() {
-        String url = getSignalingUrl();
-        Log.v(TAG, url);
-        String protocol = "ws";
-        Log.v(TAG, "making request");
-        AsyncHttpClient.getDefaultInstance().websocket(url, protocol, new AsyncHttpClient.WebSocketConnectCallback() {
-            @Override
-            public void onCompleted(Exception ex, WebSocket webSocket) {
-                Log.v(TAG, "completed");
-
-                if (ex != null) {
-                    ex.printStackTrace();
-                    return;
-                }
-                mWebSocket = webSocket;
-                mStartRTC.setSignalingConnection(webSocket);
-                mHandler.postDelayed(myTask, 1000);
-
-                webSocket.setDataCallback(new DataCallback() {
-                    @Override
-                    public void onDataAvailable(DataEmitter dataEmitter, ByteBufferList byteBufferList) {
-                        Log.v(TAG, "I got some bytes!");
-                        // note that this data has been read
-                        byteBufferList.recycle();
-                    }
-                });
-                webSocket.setClosedCallback(new CompletedCallback(){
-
-                    @Override
-                    public void onCompleted(Exception e) {
-                        if (e != null) {
-                            e.printStackTrace();
-                            return;
-                        }
-                        Log.v(TAG, "ws: closedCallback onCompleted");
-                    }
-                });
-                webSocket.setEndCallback(new CompletedCallback() {
-                    @Override
-                    public void onCompleted(Exception e) {
-                        if (e != null) {
-                            e.printStackTrace();
-                            return;
-                        }
-
-                        Log.d(TAG, "ws: endCallback onCompleted");
-                    }
-                });
-
-                webSocket.setStringCallback(new WebSocket.StringCallback() {
-                    public void onStringAvailable(String s) {
-                        Log.v(TAG, "got string: " + s);
-                        try {
-                            JSONObject response;
-                            if (s.startsWith("o")){
-                                handleOpen();
-                                return;
-                            }
-                            else if (s.startsWith("a")){
-                                Log.v(TAG, "received array");
-                                s = s.substring(1);
-                                JSONArray r = new JSONArray(s);
-                                Log.v(TAG, "parsed array");
-                                response = new JSONObject(r.getString(0));
-                            }else{
-                                Log.v(TAG, "received something else");
-                                return;
-                            }
-                            Log.v(TAG, "parsed response");
-                            String action = response.getString("action");
-                            Log.v(TAG, "action is: "+action);
-                            if (action.equals("allservers")) {
-                                Log.v(TAG, "GOT ALL SERVERS");
-                                gotAllServers(response);
-                            } else if (action.equals("member")){
-                                Log.v(TAG, "GOT new member");
-                                gotNewMember(response);
-                            } else if (action.equals("offer")){
-                                Log.v(TAG, "GOT new offer");
-                                gotNewOffer(response);
-                            } else if (action.equals("answer")){
-                                Log.v(TAG, "GOT new answer");
-                                gotNewAnswer(response);
-                            } else if (action.equals("ice")){
-                                Log.v(TAG, "GOT new ice");
-                                gotNewIce(response);
-                            } else {
-                                Log.v(TAG, "Unknown action");
-                            }
-                        } catch (JSONException e) {
-                            Log.v(TAG, "UNABLE TO PARSE RESPONSE");
-                            e.printStackTrace();
-                        }
-                    }
-                });
-            }
-        });
-
-    }
-
     private void gotNewIce(JSONObject response) {
         try {
             String otherClientSparkId = response.getString("sparkId");
@@ -353,22 +264,6 @@ public class MyActivity extends Activity {
 
     }
 
-
-
-    private void handleOpen() {
-        joinRoom("hello");
-    }
-
-    private void joinRoom(String room) {
-        try {
-            JSONObject j = new JSONObject();
-            j.put("action", "join");
-            j.put("room", room);
-            mWebSocket.send(j.toString());
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
 
     private void gotAllServers(JSONObject response) {
         try {
