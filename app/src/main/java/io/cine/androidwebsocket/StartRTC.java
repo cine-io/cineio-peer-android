@@ -124,7 +124,18 @@ public class StartRTC {
         this.mediaStream = mediaStream;
     }
 
-    public void newAnswer(String otherClientSparkId, JSONObject answer) {
+    public void newAnswer(String otherClientSparkId, JSONObject answerObj) {
         PeerConnection pc = getPeerConnection(otherClientSparkId, false);
+        try {
+            String type = answerObj.getString("type");
+            String sdpDescription = answerObj.getString("sdp");
+            SessionDescription sd = new SessionDescription(
+                    SessionDescription.Type.fromCanonicalForm(type),
+                    RTCHelper.preferISAC(sdpDescription));
+            pc.setRemoteDescription(sdpObserver, sd);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
     }
 }
