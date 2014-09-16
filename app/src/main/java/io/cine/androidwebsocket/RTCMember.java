@@ -1,6 +1,5 @@
 package io.cine.androidwebsocket;
 
-import org.webrtc.MediaStream;
 import org.webrtc.PeerConnection;
 
 /**
@@ -13,7 +12,7 @@ public class RTCMember {
     private PeerObserver peerObserver;
     private SDPObserver sdpObserver;
 
-    public RTCMember(String sparkId){
+    public RTCMember(String sparkId) {
         this.sparkId = sparkId;
     }
 
@@ -40,13 +39,14 @@ public class RTCMember {
     public void setSdpObserver(SDPObserver sdpObserver) {
         this.sdpObserver = sdpObserver;
     }
-    public void dispose(){
+
+    public void dispose() {
         PeerConnection pc = getPeerConnection();
         PeerObserver observer = getPeerObserver();
-        if (observer != null){
+        if (observer != null) {
             observer.dispose();
         }
-        if (pc != null){
+        if (pc != null) {
             // causes the app to crash
             // pc.dispose();
         }

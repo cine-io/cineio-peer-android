@@ -35,7 +35,7 @@ public class MyActivity extends Activity {
     private VideoSource videoSource;
 
 
-    public void addStream(final MediaStream stream){
+    public void addStream(final MediaStream stream) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -81,33 +81,33 @@ public class MyActivity extends Activity {
         startVideo();
     }
 
-    private void connect(){
+    private void connect() {
         primus = Primus.connect(this, "http://192.168.1.114:8888/primus");
 
-        primus.setDataCallback(new Primus.PrimusDataCallback(){
+        primus.setDataCallback(new Primus.PrimusDataCallback() {
 
             @Override
             public void onData(JSONObject response) {
                 Log.v(TAG, "parsed response");
                 try {
                     String action = response.getString("action");
-                    Log.v(TAG, "action is: "+action);
+                    Log.v(TAG, "action is: " + action);
                     if (action.equals("allservers")) {
                         Log.v(TAG, "GOT ALL SERVERS");
                         gotAllServers(response);
-                    } else if (action.equals("member")){
+                    } else if (action.equals("member")) {
                         Log.v(TAG, "GOT new member");
                         gotNewMember(response);
-                    } else if (action.equals("offer")){
+                    } else if (action.equals("offer")) {
                         Log.v(TAG, "GOT new offer");
                         gotNewOffer(response);
-                    } else if (action.equals("answer")){
+                    } else if (action.equals("answer")) {
                         Log.v(TAG, "GOT new answer");
                         gotNewAnswer(response);
-                    } else if (action.equals("ice")){
+                    } else if (action.equals("ice")) {
                         Log.v(TAG, "GOT new ice");
                         gotNewIce(response);
-                    } else if (action.equals("leave")){
+                    } else if (action.equals("leave")) {
                         Log.v(TAG, "GOT new leave");
                         memberLeft(response);
                     } else {
@@ -132,7 +132,6 @@ public class MyActivity extends Activity {
         localRender = VideoRendererGui.create(70, 5, 25, 25);
         setContentView(vsv);
     }
-
 
 
     private void startVideo() {
@@ -162,19 +161,19 @@ public class MyActivity extends Activity {
 
         lMS = factory.createLocalMediaStream("ARDAMS");
         Log.v(TAG, "2");
-            VideoCapturer capturer = getVideoCapturer();
+        VideoCapturer capturer = getVideoCapturer();
         Log.v(TAG, "3");
-            videoSource = factory.createVideoSource(capturer, blankMediaConstraints);
+        videoSource = factory.createVideoSource(capturer, blankMediaConstraints);
         Log.v(TAG, "4");
-            VideoTrack videoTrack = factory.createVideoTrack("ARDAMSv0", videoSource);
+        VideoTrack videoTrack = factory.createVideoTrack("ARDAMSv0", videoSource);
         Log.v(TAG, "5");
-            videoTrack.addRenderer(new VideoRenderer(localRender));
+        videoTrack.addRenderer(new VideoRenderer(localRender));
         Log.v(TAG, "6");
-            lMS.addTrack(videoTrack);
+        lMS.addTrack(videoTrack);
 //        if (appRtcClient.audioConstraints() != null) {
         lMS.addTrack(factory.createAudioTrack(
-                    "ARDAMSa0",
-                    factory.createAudioSource(blankMediaConstraints)));
+                "ARDAMSa0",
+                factory.createAudioSource(blankMediaConstraints)));
 //        }
         mStartRTC.setMediaStream(lMS);
 
@@ -183,15 +182,15 @@ public class MyActivity extends Activity {
     // Cycle through likely device names for the camera and return the first
     // capturer that works, or crash if none do.
     private VideoCapturer getVideoCapturer() {
-        String[] cameraFacing = { "front", "back" };
-        int[] cameraIndex = { 0, 1 };
-        int[] cameraOrientation = { 0, 90, 180, 270 };
+        String[] cameraFacing = {"front", "back"};
+        int[] cameraIndex = {0, 1};
+        int[] cameraOrientation = {0, 90, 180, 270};
         for (String facing : cameraFacing) {
-            Log.v(TAG, "facing: "+facing);
+            Log.v(TAG, "facing: " + facing);
             for (int index : cameraIndex) {
-                Log.v(TAG, "index: "+index);
+                Log.v(TAG, "index: " + index);
                 for (int orientation : cameraOrientation) {
-                    Log.v(TAG, "orientation: "+orientation);
+                    Log.v(TAG, "orientation: " + orientation);
                     String name = "Camera " + index + ", Facing " + facing +
                             ", Orientation " + orientation;
                     Log.v(TAG, "name: " + name);
@@ -262,7 +261,7 @@ public class MyActivity extends Activity {
 
 
     private void gotAllServers(JSONObject response) {
-        if (receivedAllServer){
+        if (receivedAllServer) {
             return;
         }
         receivedAllServer = true;
@@ -272,14 +271,14 @@ public class MyActivity extends Activity {
                 JSONObject iceServerData = (JSONObject) allServers.get(i);
                 String url = iceServerData.getString("url");
                 if (url.startsWith("stun:")) {
-                    Log.v(TAG, "Addding ice server: "+url);
+                    Log.v(TAG, "Addding ice server: " + url);
                     mStartRTC.addStunServer(url);
                 } else {
                     String credential = iceServerData.getString("credential");
                     String username = iceServerData.getString("username");
 //                    url, credential, username
                     mStartRTC.addTurnServer(url, username, credential);
-                    Log.v(TAG, "did not add ice server: "+ url);
+                    Log.v(TAG, "did not add ice server: " + url);
                 }
             }
             primus.joinRoom("hello");

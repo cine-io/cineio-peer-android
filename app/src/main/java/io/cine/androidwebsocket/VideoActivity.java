@@ -9,7 +9,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
-import android.widget.Toast;
 
 import org.webrtc.MediaConstraints;
 import org.webrtc.MediaStream;
@@ -35,7 +34,7 @@ public class VideoActivity extends Activity {
 
 
     @Override
-    public void onConfigurationChanged (Configuration newConfig) {
+    public void onConfigurationChanged(Configuration newConfig) {
         Point displaySize = new Point();
         getWindowManager().getDefaultDisplay().getSize(displaySize);
         vsv.updateDisplaySize(displaySize);
@@ -65,7 +64,8 @@ public class VideoActivity extends Activity {
         if (!factoryStaticInitialized) {
             RTCHelper.abortUnless(PeerConnectionFactory.initializeAndroidGlobals(
                             this, true, true),
-                    "Failed to initializeAndroidGlobals");
+                    "Failed to initializeAndroidGlobals"
+            );
             factoryStaticInitialized = true;
         }
 
@@ -89,28 +89,28 @@ public class VideoActivity extends Activity {
         Log.d(TAG, "Creating local video source...");
         MediaStream lMS = factory.createLocalMediaStream("ARDAMS");
 //        if (appRtcClient.videoConstraints() != null) {
-            VideoCapturer capturer = getVideoCapturer();
+        VideoCapturer capturer = getVideoCapturer();
         MediaConstraints blankMediaConstraints = new MediaConstraints();
-            videoSource = factory.createVideoSource(
-                    capturer, blankMediaConstraints);
-            VideoTrack videoTrack =
-                    factory.createVideoTrack("ARDAMSv0", videoSource);
-            videoTrack.addRenderer(new VideoRenderer(localRender));
-            lMS.addTrack(videoTrack);
+        videoSource = factory.createVideoSource(
+                capturer, blankMediaConstraints);
+        VideoTrack videoTrack =
+                factory.createVideoTrack("ARDAMSv0", videoSource);
+        videoTrack.addRenderer(new VideoRenderer(localRender));
+        lMS.addTrack(videoTrack);
 //        }
 //        if (appRtcClient.audioConstraints() != null) {
-            lMS.addTrack(factory.createAudioTrack(
-                    "ARDAMSa0",
-                    factory.createAudioSource(blankMediaConstraints)));
+        lMS.addTrack(factory.createAudioTrack(
+                "ARDAMSa0",
+                factory.createAudioSource(blankMediaConstraints)));
 //        }
     }
 
     // Cycle through likely device names for the camera and return the first
     // capturer that works, or crash if none do.
     private VideoCapturer getVideoCapturer() {
-        String[] cameraFacing = { "front", "back" };
-        int[] cameraIndex = { 0, 1 };
-        int[] cameraOrientation = { 0, 90, 180, 270 };
+        String[] cameraFacing = {"front", "back"};
+        int[] cameraIndex = {0, 1};
+        int[] cameraOrientation = {0, 90, 180, 270};
         for (String facing : cameraFacing) {
             for (int index : cameraIndex) {
                 for (int orientation : cameraOrientation) {

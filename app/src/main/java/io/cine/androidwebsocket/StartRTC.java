@@ -19,30 +19,29 @@ import java.util.HashMap;
  */
 public class StartRTC {
     private static final String TAG = "StartRTC";
+    private static PeerConnectionFactory factory;
     private final MyActivity mActivity;
     private final HashMap<String, RTCMember> rtcMembers;
     private Primus primus;
     private MediaStream mediaStream;
-
     private ArrayList<PeerConnection.IceServer> servers;
-    private static PeerConnectionFactory factory;
 
-    public static PeerConnectionFactory getFactory(){
-        if (factory != null){
-            return factory;
-        }
-        factory = new PeerConnectionFactory();
-        return factory;
-    }
-
-    public StartRTC(MyActivity activity, Primus primus){
+    public StartRTC(MyActivity activity, Primus primus) {
         mActivity = activity;
         this.primus = primus;
         this.rtcMembers = new HashMap<String, RTCMember>();
         servers = new ArrayList<PeerConnection.IceServer>();
     }
 
-    public void addStunServer(String iceServer){
+    public static PeerConnectionFactory getFactory() {
+        if (factory != null) {
+            return factory;
+        }
+        factory = new PeerConnectionFactory();
+        return factory;
+    }
+
+    public void addStunServer(String iceServer) {
         servers.add(new PeerConnection.IceServer(iceServer));
     }
 
@@ -56,8 +55,8 @@ public class StartRTC {
     }
 
     //    TODO: ensure iceServers are added
-    public PeerConnection createPeerConnection(String otherClientSparkId, boolean isInitiator){
-        Log.d(TAG, "creating new peer connection for: "+ otherClientSparkId);
+    public PeerConnection createPeerConnection(String otherClientSparkId, boolean isInitiator) {
+        Log.d(TAG, "creating new peer connection for: " + otherClientSparkId);
         PeerObserver observer = new PeerObserver(mActivity, primus, otherClientSparkId);
         Log.d(TAG, "created new peer observer");
 
@@ -102,9 +101,9 @@ public class StartRTC {
             int sdpMLineIndex = j.getInt("sdpMLineIndex");
             String sdpMid = j.getString("sdpMid");
             String candidate = j.getString("candidate");
-            Log.v(TAG, "sdpMLineIndex: "+sdpMLineIndex);
-            Log.v(TAG, "sdpMid: "+sdpMid);
-            Log.v(TAG, "candidate: "+candidate);
+            Log.v(TAG, "sdpMLineIndex: " + sdpMLineIndex);
+            Log.v(TAG, "sdpMid: " + sdpMid);
+            Log.v(TAG, "candidate: " + candidate);
             IceCandidate iceCandidate = new IceCandidate(sdpMid, sdpMLineIndex, candidate);
             pc.addIceCandidate(iceCandidate);
         } catch (JSONException e) {
@@ -115,9 +114,9 @@ public class StartRTC {
 
     private PeerConnection getPeerConnection(String otherClientSparkId, boolean isInitiator) {
         RTCMember rtc = rtcMembers.get(otherClientSparkId);
-        if (rtc != null){
+        if (rtc != null) {
             return rtc.getPeerConnection();
-        }else{
+        } else {
             return createPeerConnection(otherClientSparkId, isInitiator);
         }
     }
@@ -138,7 +137,7 @@ public class StartRTC {
 
     }
 
-    public SDPObserver getSDPObserverFromSparkId(String otherClientSparkId){
+    public SDPObserver getSDPObserverFromSparkId(String otherClientSparkId) {
         return rtcMembers.get(otherClientSparkId).getSdpObserver();
     }
 
@@ -166,7 +165,7 @@ public class StartRTC {
 
     public void memberLeft(String otherClientSparkId) {
         RTCMember rtc = rtcMembers.remove(otherClientSparkId);
-        if(rtc != null){
+        if (rtc != null) {
             rtc.dispose();
         }
     }

@@ -57,7 +57,7 @@ class PeerObserver implements PeerConnection.Observer {
     }
 
     @Override
-    public void onRemoveStream(MediaStream stream){
+    public void onRemoveStream(MediaStream stream) {
         disposeOfStream(stream);
     }
 

@@ -36,36 +36,6 @@ public class SDPObserver implements SdpObserver {
         this.isInitiator = isInitiator;
     }
 
-    @Override public void onCreateSuccess(final SessionDescription origSdp) {
-            RTCHelper.abortUnless(localSdp == null, "multiple SDP create?!?");
-            final SessionDescription sdp = new SessionDescription(
-                    origSdp.type, RTCHelper.preferISAC(origSdp.description));
-            localSdp = sdp;
-        final SDPObserver self = this;
-        mActivity.runOnUiThread(new Runnable() {
-            public void run() {
-                peerConnection.setLocalDescription(self, sdp);
-            }
-        });
-        }
-
-    // Helper for sending local SDP (offer or answer, depending on role) to the
-        // other participant.  Note that it is important to send the output of
-        // create{Offer,Answer} and not merely the current value of
-        // getLocalDescription() because the latter may include ICE candidates that
-        // we might want to filter elsewhere.
-        private void sendLocalDescription() {
-            Log.d(TAG, "Sending " + localSdp.type);
-            JSONObject sdpJSON = new JSONObject();
-            String type = localSdp.type.canonicalForm();
-            jsonPut(sdpJSON, "type", type);
-            jsonPut(sdpJSON, "sdp", localSdp.description);
-            JSONObject json = new JSONObject();
-            jsonPut(json, type, sdpJSON);
-            jsonPut(json, "action", type);
-            primus.sendToOtherSpark(mOtherClientSparkId, json);
-        }
-
     // Put a |key|->|value| mapping in |json|.
     private static void jsonPut(JSONObject json, String key, Object value) {
         try {
@@ -75,41 +45,76 @@ public class SDPObserver implements SdpObserver {
         }
     }
 
-    @Override public void onSetSuccess() {
-            mActivity.runOnUiThread(new Runnable() {
-                public void run() {
-                    if (isInitiator) {
-                        if (peerConnection.getRemoteDescription() != null) {
-                            // We've set our local offer and received & set the remote
-                            // answer, so drain candidates.
-                            // we don't need to drain candidates, they've already been added
-                        } else {
-                            // We've just set our local description so time to send it.
-                            sendLocalDescription();
-                        }
+    @Override
+    public void onCreateSuccess(final SessionDescription origSdp) {
+        RTCHelper.abortUnless(localSdp == null, "multiple SDP create?!?");
+        final SessionDescription sdp = new SessionDescription(
+                origSdp.type, RTCHelper.preferISAC(origSdp.description));
+        localSdp = sdp;
+        final SDPObserver self = this;
+        mActivity.runOnUiThread(new Runnable() {
+            public void run() {
+                peerConnection.setLocalDescription(self, sdp);
+            }
+        });
+    }
+
+    // Helper for sending local SDP (offer or answer, depending on role) to the
+    // other participant.  Note that it is important to send the output of
+    // create{Offer,Answer} and not merely the current value of
+    // getLocalDescription() because the latter may include ICE candidates that
+    // we might want to filter elsewhere.
+    private void sendLocalDescription() {
+        Log.d(TAG, "Sending " + localSdp.type);
+        JSONObject sdpJSON = new JSONObject();
+        String type = localSdp.type.canonicalForm();
+        jsonPut(sdpJSON, "type", type);
+        jsonPut(sdpJSON, "sdp", localSdp.description);
+        JSONObject json = new JSONObject();
+        jsonPut(json, type, sdpJSON);
+        jsonPut(json, "action", type);
+        primus.sendToOtherSpark(mOtherClientSparkId, json);
+    }
+
+    @Override
+    public void onSetSuccess() {
+        mActivity.runOnUiThread(new Runnable() {
+            public void run() {
+                if (isInitiator) {
+                    if (peerConnection.getRemoteDescription() != null) {
+                        // We've set our local offer and received & set the remote
+                        // answer, so drain candidates.
+                        // we don't need to drain candidates, they've already been added
                     } else {
-                        if (peerConnection.getLocalDescription() == null) {
-                            // We just set the remote offer, time to create our answer.
-                            Log.d(TAG, "Creating answer");
-                            peerConnection.createAnswer(SDPObserver.this, constraints);
-                        } else {
-                            // Answer now set as local description; send it and drain
-                            // candidates.
-                            sendLocalDescription();
-                        }
+                        // We've just set our local description so time to send it.
+                        sendLocalDescription();
+                    }
+                } else {
+                    if (peerConnection.getLocalDescription() == null) {
+                        // We just set the remote offer, time to create our answer.
+                        Log.d(TAG, "Creating answer");
+                        peerConnection.createAnswer(SDPObserver.this, constraints);
+                    } else {
+                        // Answer now set as local description; send it and drain
+                        // candidates.
+                        sendLocalDescription();
                     }
                 }
-            });
-        }
+            }
+        });
+    }
 
-        @Override public void onCreateFailure(final String error) {
-            mActivity.runOnUiThread(new Runnable() {
-                public void run() {
-                    throw new RuntimeException("createSDP error: " + error);
-                }
-            });
-        }
-    @Override public void onSetFailure(final String error) {
+    @Override
+    public void onCreateFailure(final String error) {
+        mActivity.runOnUiThread(new Runnable() {
+            public void run() {
+                throw new RuntimeException("createSDP error: " + error);
+            }
+        });
+    }
+
+    @Override
+    public void onSetFailure(final String error) {
         mActivity.runOnUiThread(new Runnable() {
             public void run() {
                 throw new RuntimeException("setSDP error: " + error);
