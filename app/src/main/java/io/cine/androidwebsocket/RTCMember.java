@@ -47,7 +47,8 @@ public class RTCMember {
             observer.dispose();
         }
         if (pc != null){
-//            pc.dispose();
+            // causes the app to crash
+            // pc.dispose();
         }
     }
 }

@@ -49,7 +49,8 @@ public class MyActivity extends Activity {
         runOnUiThread(new Runnable() {
             public void run() {
                 Log.d(TAG, "DISPOSING OF STREAM");
-//                stream.dispose();
+                // causes the app to crash
+                // stream.dispose();
                 Log.d(TAG, "DISPOSED OF STREAM");
             }
         });
