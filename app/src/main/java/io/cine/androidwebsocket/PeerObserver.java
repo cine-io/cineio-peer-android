@@ -16,10 +16,11 @@ class PeerObserver implements PeerConnection.Observer {
     private static final String TAG = "PeerObserver";
     private final Primus primus;
     private final String mOtherClientSparkId;
-    private final MyActivity mContext;
+    private final MyActivity mActivity;
+    private MediaStream addedStream;
 
-    public PeerObserver(MyActivity context, Primus primus, String otherClientSparkId) {
-        mContext = context;
+    public PeerObserver(MyActivity activity, Primus primus, String otherClientSparkId) {
+        mActivity = activity;
         this.primus = primus;
         mOtherClientSparkId = otherClientSparkId;
     }
@@ -47,16 +48,17 @@ class PeerObserver implements PeerConnection.Observer {
 
     @Override
     public void onAddStream(final MediaStream stream) {
-
         Log.d(TAG, "onAddStream");
-        mContext.runOnUiThread(new Runnable() {
-            public void run() {
-                RTCHelper.abortUnless(stream.audioTracks.size() <= 1 && stream.videoTracks.size() <= 1, "Weird-looking stream: " + stream);
-                if (stream.videoTracks.size() == 1) {
-                    mContext.addStream(stream);
-                }
-            }
-        });
+        addedStream = stream;
+        RTCHelper.abortUnless(stream.audioTracks.size() <= 1 && stream.videoTracks.size() <= 1, "Weird-looking stream: " + stream);
+        if (stream.videoTracks.size() == 1) {
+            mActivity.addStream(stream);
+        }
+    }
+
+    @Override
+    public void onRemoveStream(MediaStream stream){
+        disposeOfStream(stream);
     }
 
     @Override
@@ -80,11 +82,6 @@ class PeerObserver implements PeerConnection.Observer {
     }
 
     @Override
-    public void onRemoveStream(MediaStream stream) {
-        Log.d(TAG, "onRemoveStream");
-    }
-
-    @Override
     public void onDataChannel(DataChannel dataChannel) {
         Log.d(TAG, "onDataChannel");
     }
@@ -92,5 +89,14 @@ class PeerObserver implements PeerConnection.Observer {
     @Override
     public void onRenegotiationNeeded() {
         Log.d(TAG, "onRenegotiationNeeded");
+    }
+
+    public void dispose() {
+        disposeOfStream(addedStream);
+    }
+
+    private void disposeOfStream(final MediaStream stream) {
+        Log.d(TAG, "removing stream");
+        mActivity.removeStream(stream);
     }
 }

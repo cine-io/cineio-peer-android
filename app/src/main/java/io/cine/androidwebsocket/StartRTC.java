@@ -12,18 +12,20 @@ import org.webrtc.PeerConnectionFactory;
 import org.webrtc.SessionDescription;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Created by thomas on 9/11/14.
  */
 public class StartRTC {
     private static final String TAG = "StartRTC";
-    private SDPObserver sdpObserver;
     private final MyActivity mActivity;
+    private final HashMap<String, RTCMember> rtcMembers;
+    private Primus primus;
+    private MediaStream mediaStream;
 
     private ArrayList<PeerConnection.IceServer> servers;
     private static PeerConnectionFactory factory;
-    private PeerConnection peerConnection;
 
     public static PeerConnectionFactory getFactory(){
         if (factory != null){
@@ -33,12 +35,10 @@ public class StartRTC {
         return factory;
     }
 
-    private Primus primus;
-    private MediaStream mediaStream;
-
     public StartRTC(MyActivity activity, Primus primus){
         mActivity = activity;
         this.primus = primus;
+        this.rtcMembers = new HashMap<String, RTCMember>();
         servers = new ArrayList<PeerConnection.IceServer>();
     }
 
@@ -57,7 +57,9 @@ public class StartRTC {
 
     //    TODO: ensure iceServers are added
     public PeerConnection createPeerConnection(String otherClientSparkId, boolean isInitiator){
-        final PeerObserver observer = new PeerObserver(mActivity, primus, otherClientSparkId);
+        Log.d(TAG, "creating new peer connection for: "+ otherClientSparkId);
+        PeerObserver observer = new PeerObserver(mActivity, primus, otherClientSparkId);
+        Log.d(TAG, "created new peer observer");
 
         MediaConstraints constraints = new MediaConstraints();
 
@@ -67,14 +69,25 @@ public class StartRTC {
                 "OfferToReceiveVideo", "true"));
 
         constraints.optional.add(new MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"));
+        Log.d(TAG, "created new constraints");
 
-        peerConnection = factory.createPeerConnection(servers, constraints, observer);
+        PeerConnection peerConnection = factory.createPeerConnection(servers, constraints, observer);
+        Log.d(TAG, "created new peerConnection");
         peerConnection.addStream(mediaStream, new MediaConstraints());
+        Log.d(TAG, "added stream");
 
-        sdpObserver = new SDPObserver(otherClientSparkId, peerConnection, constraints, primus, mActivity, isInitiator);
+        SDPObserver sdpObserver = new SDPObserver(otherClientSparkId, peerConnection, constraints, primus, mActivity, isInitiator);
+        Log.d(TAG, "created sdpObserver");
+
         if (isInitiator) {
+            Log.d(TAG, "creating offer");
             peerConnection.createOffer(sdpObserver, constraints);
         }
+        RTCMember rtc = new RTCMember(otherClientSparkId);
+        rtc.setSdpObserver(sdpObserver);
+        rtc.setPeerConnection(peerConnection);
+        rtc.setPeerObserver(observer);
+        rtcMembers.put(otherClientSparkId, rtc);
         return peerConnection;
     }
 
@@ -100,13 +113,12 @@ public class StartRTC {
 
     }
 
-    //            TOOD: MAKE THIS USE A HASHMAP
     private PeerConnection getPeerConnection(String otherClientSparkId, boolean isInitiator) {
-        if (peerConnection != null){
-            return peerConnection;
+        RTCMember rtc = rtcMembers.get(otherClientSparkId);
+        if (rtc != null){
+            return rtc.getPeerConnection();
         }else{
-            createPeerConnection(otherClientSparkId, isInitiator);
-            return peerConnection;
+            return createPeerConnection(otherClientSparkId, isInitiator);
         }
     }
 
@@ -118,11 +130,16 @@ public class StartRTC {
             SessionDescription sd = new SessionDescription(
                     SessionDescription.Type.fromCanonicalForm(type),
                     RTCHelper.preferISAC(sdpDescription));
+            SDPObserver sdpObserver = getSDPObserverFromSparkId(otherClientSparkId);
             pc.setRemoteDescription(sdpObserver, sd);
         } catch (JSONException e) {
             e.printStackTrace();
         }
 
+    }
+
+    public SDPObserver getSDPObserverFromSparkId(String otherClientSparkId){
+        return rtcMembers.get(otherClientSparkId).getSdpObserver();
     }
 
     public void setMediaStream(MediaStream mediaStream) {
@@ -139,6 +156,7 @@ public class StartRTC {
             SessionDescription sd = new SessionDescription(
                     SessionDescription.Type.fromCanonicalForm(type),
                     RTCHelper.preferISAC(sdpDescription));
+            SDPObserver sdpObserver = getSDPObserverFromSparkId(otherClientSparkId);
             pc.setRemoteDescription(sdpObserver, sd);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -146,4 +164,10 @@ public class StartRTC {
 
     }
 
+    public void memberLeft(String otherClientSparkId) {
+        RTCMember rtc = rtcMembers.remove(otherClientSparkId);
+        if(rtc != null){
+            rtc.dispose();
+        }
+    }
 }

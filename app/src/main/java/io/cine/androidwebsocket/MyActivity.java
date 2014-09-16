@@ -32,12 +32,30 @@ public class MyActivity extends Activity {
     private MediaStream lMS;
     private Primus primus;
     private boolean receivedAllServer;
+    private VideoSource videoSource;
 
 
-    public void addStream(MediaStream stream){
-        stream.videoTracks.get(0).addRenderer(
-                new VideoRenderer(remoteRender));
+    public void addStream(final MediaStream stream){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                stream.videoTracks.get(0).addRenderer(
+                        new VideoRenderer(remoteRender));
+            }
+        });
     }
+
+    public void removeStream(final MediaStream stream) {
+        runOnUiThread(new Runnable() {
+            public void run() {
+                Log.d(TAG, "DISPOSING OF STREAM");
+//                stream.dispose();
+                Log.d(TAG, "DISPOSED OF STREAM");
+            }
+        });
+
+    }
+
 
     @Override
     protected void onPause() {
@@ -65,12 +83,6 @@ public class MyActivity extends Activity {
     private void connect(){
         primus = Primus.connect(this, "http://192.168.1.114:8888/primus");
 
-//        primus.setOpenCallback(new Primus.PrimusOpenCallback() {
-//            @Override
-//            public void onOpen() {
-//            }
-//        });
-
         primus.setDataCallback(new Primus.PrimusDataCallback(){
 
             @Override
@@ -94,6 +106,9 @@ public class MyActivity extends Activity {
                     } else if (action.equals("ice")){
                         Log.v(TAG, "GOT new ice");
                         gotNewIce(response);
+                    } else if (action.equals("leave")){
+                        Log.v(TAG, "GOT new leave");
+                        memberLeft(response);
                     } else {
                         Log.v(TAG, "Unknown action");
                     }
@@ -115,13 +130,9 @@ public class MyActivity extends Activity {
         remoteRender = VideoRendererGui.create(0, 0, 100, 100);
         localRender = VideoRendererGui.create(70, 5, 25, 25);
         setContentView(vsv);
-
     }
 
 
-
-
-    private VideoSource videoSource;
 
     private void startVideo() {
         AudioManager audioManager =
@@ -223,6 +234,17 @@ public class MyActivity extends Activity {
         } catch (JSONException e) {
             e.printStackTrace();
         }
+
+    }
+
+    private void memberLeft(JSONObject response) {
+        try {
+            String otherClientSparkId = response.getString("sparkId");
+            mStartRTC.memberLeft(otherClientSparkId);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
 
     }
 

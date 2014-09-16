@@ -2,19 +2,13 @@ package io.cine.androidwebsocket;
 
 import android.app.Activity;
 import android.util.Log;
-import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.webrtc.IceCandidate;
 import org.webrtc.MediaConstraints;
 import org.webrtc.PeerConnection;
 import org.webrtc.SdpObserver;
 import org.webrtc.SessionDescription;
-
-import java.util.LinkedList;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Created by thomas on 9/12/14.
@@ -25,7 +19,7 @@ import java.util.regex.Pattern;
 public class SDPObserver implements SdpObserver {
     private static final String TAG = "SDPObserver";
 
-    private final Activity mContext;
+    private final Activity mActivity;
     private final PeerConnection peerConnection;
     private final String mOtherClientSparkId;
     private final Primus primus;
@@ -33,8 +27,8 @@ public class SDPObserver implements SdpObserver {
     private final boolean isInitiator;
     private SessionDescription localSdp;
 
-    public SDPObserver(String otherClientSparkId, PeerConnection peerConnection, MediaConstraints constraints, Primus primus, MyActivity mActivity, boolean isInitiator) {
-        mContext = mActivity;
+    public SDPObserver(String otherClientSparkId, PeerConnection peerConnection, MediaConstraints constraints, Primus primus, MyActivity activity, boolean isInitiator) {
+        this.mActivity = activity;
         this.peerConnection = peerConnection;
         mOtherClientSparkId = otherClientSparkId;
         this.primus = primus;
@@ -48,11 +42,11 @@ public class SDPObserver implements SdpObserver {
                     origSdp.type, RTCHelper.preferISAC(origSdp.description));
             localSdp = sdp;
         final SDPObserver self = this;
-        mContext.runOnUiThread(new Runnable() {
-                public void run() {
-                    peerConnection.setLocalDescription(self, sdp);
-                }
-            });
+        mActivity.runOnUiThread(new Runnable() {
+            public void run() {
+                peerConnection.setLocalDescription(self, sdp);
+            }
+        });
         }
 
     // Helper for sending local SDP (offer or answer, depending on role) to the
@@ -82,7 +76,7 @@ public class SDPObserver implements SdpObserver {
     }
 
     @Override public void onSetSuccess() {
-            mContext.runOnUiThread(new Runnable() {
+            mActivity.runOnUiThread(new Runnable() {
                 public void run() {
                     if (isInitiator) {
                         if (peerConnection.getRemoteDescription() != null) {
@@ -109,14 +103,14 @@ public class SDPObserver implements SdpObserver {
         }
 
         @Override public void onCreateFailure(final String error) {
-            mContext.runOnUiThread(new Runnable() {
+            mActivity.runOnUiThread(new Runnable() {
                 public void run() {
                     throw new RuntimeException("createSDP error: " + error);
                 }
             });
         }
     @Override public void onSetFailure(final String error) {
-        mContext.runOnUiThread(new Runnable() {
+        mActivity.runOnUiThread(new Runnable() {
             public void run() {
                 throw new RuntimeException("setSDP error: " + error);
             }
