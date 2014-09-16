@@ -7,7 +7,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -248,11 +247,15 @@ public class MyActivity extends Activity {
             JSONArray allServers = response.getJSONArray("data");
             for (int i = 0; i < allServers.length(); i++) {
                 JSONObject iceServerData = (JSONObject) allServers.get(i);
-                String url = (String) iceServerData.get("url");
+                String url = iceServerData.getString("url");
                 if (url.startsWith("stun:")) {
                     Log.v(TAG, "Addding ice server: "+url);
-                    mStartRTC.addIceServer(url);
+                    mStartRTC.addStunServer(url);
                 } else {
+                    String credential = iceServerData.getString("credential");
+                    String username = iceServerData.getString("username");
+//                    url, credential, username
+                    mStartRTC.addTurnServer(url, username, credential);
                     Log.v(TAG, "did not add ice server: "+ url);
                 }
             }

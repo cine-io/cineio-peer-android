@@ -42,9 +42,14 @@ public class StartRTC {
         servers = new ArrayList<PeerConnection.IceServer>();
     }
 
-    public void addIceServer(String iceServer){
+    public void addStunServer(String iceServer){
         servers.add(new PeerConnection.IceServer(iceServer));
     }
+
+    public void addTurnServer(String url, String username, String password) {
+        servers.add(new PeerConnection.IceServer(url, username, password));
+    }
+
 
     public void newMember(String otherClientSparkId) {
         getPeerConnection(otherClientSparkId, true);
@@ -140,4 +145,5 @@ public class StartRTC {
         }
 
     }
+
 }

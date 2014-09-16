@@ -32,9 +32,6 @@ public class SDPObserver implements SdpObserver {
     private final MediaConstraints constraints;
     private final boolean isInitiator;
     private SessionDescription localSdp;
-    private Toast logToast;
-    private LinkedList<IceCandidate> queuedRemoteCandidates =
-            new LinkedList<IceCandidate>();
 
     public SDPObserver(String otherClientSparkId, PeerConnection peerConnection, MediaConstraints constraints, Primus primus, MyActivity mActivity, boolean isInitiator) {
         mContext = mActivity;
@@ -91,7 +88,7 @@ public class SDPObserver implements SdpObserver {
                         if (peerConnection.getRemoteDescription() != null) {
                             // We've set our local offer and received & set the remote
                             // answer, so drain candidates.
-                            drainRemoteCandidates();
+                            // we don't need to drain candidates, they've already been added
                         } else {
                             // We've just set our local description so time to send it.
                             sendLocalDescription();
@@ -105,7 +102,6 @@ public class SDPObserver implements SdpObserver {
                             // Answer now set as local description; send it and drain
                             // candidates.
                             sendLocalDescription();
-                            drainRemoteCandidates();
                         }
                     }
                 }
@@ -125,12 +121,5 @@ public class SDPObserver implements SdpObserver {
                 throw new RuntimeException("setSDP error: " + error);
             }
         });
-    }
-
-    private void drainRemoteCandidates() {
-        for (IceCandidate candidate : queuedRemoteCandidates) {
-            peerConnection.addIceCandidate(candidate);
-        }
-        queuedRemoteCandidates = null;
     }
 }

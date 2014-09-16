@@ -28,7 +28,6 @@ public class VideoActivity extends Activity {
     private VideoRenderer.Callbacks localRender;
     private VideoRenderer.Callbacks remoteRender;
     private MediaConstraints sdpMediaConstraints;
-    private Toast logToast;
     private PeerConnectionFactory factory;
     private VideoSource videoSource;
     private boolean videoSourceStopped;
