@@ -32,6 +32,9 @@ public class Primus {
     private PrimusOpenCallback openCallback;
     private PrimusWebSocketCallback websocketCallback;
     private int currentTimerRun;
+    private String apiKey;
+    private String identity;
+
     Runnable myTask = new Runnable() {
         @Override
         public void run() {
@@ -47,7 +50,7 @@ public class Primus {
                 String ping = "primus::ping::" + System.currentTimeMillis();
                 // Log.v(TAG, "SENDING PING - " + ping);
                 Log.v(TAG, webSocket.isOpen() ? "socket open" : "socket closed");
-                sendToWebsocket(ping);
+                sendRawToWebSocket(ping);
             } else {
 //                Log.v(TAG, "did not send ping: "+currentTimerRun);
             }
@@ -63,6 +66,10 @@ public class Primus {
         mHandler = new Handler();
         currentTimerRun = 0;
         reconnect();
+    }
+
+    public void init(String apiKey){
+        this.apiKey = apiKey;
     }
 
     public static Primus connect(MyActivity activity, String url) {
@@ -209,7 +216,7 @@ public class Primus {
         return baseUrl + "/" + server + "/" + connId + "/websocket";
     }
 
-    private void sendToWebsocket(String data) {
+    private void sendRawToWebSocket(String data) {
         data = "[\"" + data + "\"]";
         Log.v(TAG, data);
         webSocket.send(data);
@@ -223,6 +230,7 @@ public class Primus {
     public void send(final JSONObject j) {
         try {
             j.put("source", "android");
+            j.put("apikey", this.apiKey);
             Log.d(TAG, "SENDING STUFF: " + j.toString());
             activity.runOnUiThread(new Runnable() {
                 public void run() {
@@ -246,6 +254,33 @@ public class Primus {
             e.printStackTrace();
         }
         send(j);
+    }
+
+    public void identify(String identity) {
+        try {
+            this.identity = identity;
+            JSONObject j = new JSONObject();
+            j.put("action", "identify");
+            j.put("identity", identity);
+            Log.v(TAG, "identifying: " + identity);
+            send(j);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public void call(String otherIdentity) {
+        try {
+            JSONObject j = new JSONObject();
+            j.put("action", "call");
+            j.put("identity", this.identity);
+            j.put("otheridentity", otherIdentity);
+            Log.v(TAG, "calling: " + identity);
+            send(j);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     public static interface PrimusWebSocketCallback {

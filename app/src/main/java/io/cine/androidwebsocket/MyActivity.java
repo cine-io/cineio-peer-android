@@ -34,7 +34,6 @@ public class MyActivity extends Activity {
     private boolean receivedAllServer;
     private VideoSource videoSource;
 
-
     public void addStream(final MediaStream stream) {
         runOnUiThread(new Runnable() {
             @Override
@@ -76,14 +75,25 @@ public class MyActivity extends Activity {
             factoryStaticInitialized = true;
         }
         connect();
-        mStartRTC = new StartRTC(this, primus);
+        startRTC();
         prepareLayout();
         startVideo();
     }
 
+    private void startRTC() {
+        mStartRTC = new StartRTC(this, primus);
+    }
+
     private void connect() {
         primus = Primus.connect(this, "http://192.168.1.114:8888/primus");
-
+        primus.init("TEST_API_KEY");
+        primus.setOpenCallback(new Primus.PrimusOpenCallback() {
+            @Override
+            public void onOpen() {
+                primus.identify("thomas-android");
+                primus.call("thomas");
+            }
+        });
         primus.setDataCallback(new Primus.PrimusDataCallback() {
 
             @Override
@@ -110,6 +120,9 @@ public class MyActivity extends Activity {
                     } else if (action.equals("leave")) {
                         Log.v(TAG, "GOT new leave");
                         memberLeft(response);
+                    } else if (action.equals("incomingcall")) {
+                        Log.v(TAG, "GOT new incoming call");
+                        handleCall(response);
                     } else {
                         Log.v(TAG, "Unknown action");
                     }
@@ -119,6 +132,14 @@ public class MyActivity extends Activity {
 
             }
         });
+    }
+
+    private void handleCall(JSONObject response) {
+        try {
+            primus.joinRoom(response.getString("room"));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     private void prepareLayout() {
@@ -271,17 +292,16 @@ public class MyActivity extends Activity {
                 JSONObject iceServerData = (JSONObject) allServers.get(i);
                 String url = iceServerData.getString("url");
                 if (url.startsWith("stun:")) {
-                    Log.v(TAG, "Addding ice server: " + url);
+                    Log.v(TAG, "Addding ice stun server: " + url);
                     mStartRTC.addStunServer(url);
                 } else {
                     String credential = iceServerData.getString("credential");
                     String username = iceServerData.getString("username");
+                    Log.v(TAG, "Addding ice turn server: " + url);
 //                    url, credential, username
                     mStartRTC.addTurnServer(url, username, credential);
-                    Log.v(TAG, "did not add ice server: " + url);
                 }
             }
-            primus.joinRoom("hello");
         } catch (JSONException e) {
             e.printStackTrace();
         }
