@@ -1,6 +1,7 @@
 package io.cine.androidwebsocket;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Point;
 import android.media.AudioManager;
 import android.os.Bundle;
@@ -20,6 +21,12 @@ import org.webrtc.VideoRendererGui;
 import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
 
+import java.util.LinkedList;
+import java.util.Queue;
+
+import io.cine.androidwebsocket.receiver.GcmRegisterer;
+import io.cine.androidwebsocket.receiver.PlayUnavailableException;
+
 
 public class MyActivity extends Activity {
     private static final String TAG = "AndroidWebsocketTest";
@@ -33,35 +40,7 @@ public class MyActivity extends Activity {
     private Primus primus;
     private boolean receivedAllServer;
     private VideoSource videoSource;
-
-    public void addStream(final MediaStream stream) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                stream.videoTracks.get(0).addRenderer(
-                        new VideoRenderer(remoteRender));
-            }
-        });
-    }
-
-    public void removeStream(final MediaStream stream) {
-        runOnUiThread(new Runnable() {
-            public void run() {
-                Log.d(TAG, "DISPOSING OF STREAM");
-                // causes the app to crash
-                // stream.dispose();
-                Log.d(TAG, "DISPOSED OF STREAM");
-            }
-        });
-
-    }
-
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        primus.onPause();
-    }
+    private Queue<CineMessage> onConnectActions;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,10 +53,56 @@ public class MyActivity extends Activity {
             );
             factoryStaticInitialized = true;
         }
+        try {
+            GcmRegisterer.registerWithCine(this);
+        } catch (PlayUnavailableException e) {
+            Log.v(TAG, "Google Play is unavailable");
+            e.printStackTrace();
+        }
+        onConnectActions = new LinkedList<CineMessage>();
         connect();
         startRTC();
         prepareLayout();
         startVideo();
+    }
+
+//    // You need to do the Play Services APK check here too.
+//    @Override
+//    protected void onResume() {
+//        super.onResume();
+//    }
+
+    protected void onNewIntent(Intent intent) {
+        Bundle extras = intent.getExtras();
+        if (extras != null) {
+            Log.v(TAG, "SOME EXTRAS" + extras.toString());
+            onConnectActions.add(new CineMessage(extras));
+            processPendingMessages();
+//            connect();
+        } else {
+            Log.v(TAG, "NO extras");
+        }
+    }
+
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        primus.end();
+    }
+
+    private void processPendingMessages() {
+//        primus.joinRoom("abcd");
+//        runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+                while (!onConnectActions.isEmpty()) {
+                    CineMessage message = onConnectActions.remove();
+                    Log.v(TAG, "HANDLING CINE MESSAGE: " + message.getAction());
+                    handleCineMessage(message);
+                }
+//            }
+//        });
     }
 
     private void startRTC() {
@@ -85,13 +110,16 @@ public class MyActivity extends Activity {
     }
 
     private void connect() {
+//        if (primus != null) {
+//            primus.end();
+//            receivedAllServer = false;
+//        }
         primus = Primus.connect(this, "http://192.168.1.114:8888/primus");
         primus.init("TEST_API_KEY");
         primus.setOpenCallback(new Primus.PrimusOpenCallback() {
             @Override
             public void onOpen() {
-                primus.identify("thomas-android");
-                primus.call("thomas");
+//                processPendingMessages();
             }
         });
         primus.setDataCallback(new Primus.PrimusDataCallback() {
@@ -99,47 +127,42 @@ public class MyActivity extends Activity {
             @Override
             public void onData(JSONObject response) {
                 Log.v(TAG, "parsed response");
-                try {
-                    String action = response.getString("action");
-                    Log.v(TAG, "action is: " + action);
-                    if (action.equals("allservers")) {
-                        Log.v(TAG, "GOT ALL SERVERS");
-                        gotAllServers(response);
-                    } else if (action.equals("member")) {
-                        Log.v(TAG, "GOT new member");
-                        gotNewMember(response);
-                    } else if (action.equals("offer")) {
-                        Log.v(TAG, "GOT new offer");
-                        gotNewOffer(response);
-                    } else if (action.equals("answer")) {
-                        Log.v(TAG, "GOT new answer");
-                        gotNewAnswer(response);
-                    } else if (action.equals("ice")) {
-                        Log.v(TAG, "GOT new ice");
-                        gotNewIce(response);
-                    } else if (action.equals("leave")) {
-                        Log.v(TAG, "GOT new leave");
-                        memberLeft(response);
-                    } else if (action.equals("incomingcall")) {
-                        Log.v(TAG, "GOT new incoming call");
-                        handleCall(response);
-                    } else {
-                        Log.v(TAG, "Unknown action");
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
+                handleCineMessage(new CineMessage(response));
             }
         });
     }
 
-    private void handleCall(JSONObject response) {
-        try {
-            primus.joinRoom(response.getString("room"));
-        } catch (JSONException e) {
-            e.printStackTrace();
+    private void handleCineMessage(CineMessage message) {
+        String action = message.getString("action");
+        Log.v(TAG, "action is: " + action);
+        if (action.equals("allservers")) {
+            Log.v(TAG, "GOT ALL SERVERS");
+            gotAllServers(message);
+        } else if (action.equals("member")) {
+            Log.v(TAG, "GOT new member");
+            gotNewMember(message);
+        } else if (action.equals("offer")) {
+            Log.v(TAG, "GOT new offer");
+            gotNewOffer(message);
+        } else if (action.equals("answer")) {
+            Log.v(TAG, "GOT new answer");
+            gotNewAnswer(message);
+        } else if (action.equals("ice")) {
+            Log.v(TAG, "GOT new ice");
+            gotNewIce(message);
+        } else if (action.equals("leave")) {
+            Log.v(TAG, "GOT new leave");
+            memberLeft(message);
+        } else if (action.equals("incomingcall")) {
+            Log.v(TAG, "GOT new incoming call");
+            handleCall(message);
+        } else {
+            Log.v(TAG, "Unknown action");
         }
+    }
+
+    private void handleCall(CineMessage response) {
+        primus.joinRoom(response.getString("room"));
     }
 
     private void prepareLayout() {
@@ -227,61 +250,35 @@ public class MyActivity extends Activity {
         throw new RuntimeException("Failed to open capturer");
     }
 
-    private void gotNewIce(JSONObject response) {
-        try {
-            String otherClientSparkId = response.getString("sparkId");
+    private void gotNewIce(CineMessage response) {
+        String otherClientSparkId = response.getString("sparkId");
 
-            mStartRTC.newIce(otherClientSparkId, response.getJSONObject("candidate"));
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        mStartRTC.newIce(otherClientSparkId, response.getJSONObject("candidate"));
     }
 
-    private void gotNewOffer(JSONObject response) {
-        try {
-            String otherClientSparkId = response.getString("sparkId");
-            mStartRTC.newOffer(otherClientSparkId, response.getJSONObject("offer"));
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
-
+    private void gotNewOffer(CineMessage response) {
+        String otherClientSparkId = response.getString("sparkId");
+        mStartRTC.newOffer(otherClientSparkId, response.getJSONObject("offer"));
     }
 
-    private void gotNewAnswer(JSONObject response) {
-        try {
-            String otherClientSparkId = response.getString("sparkId");
-            mStartRTC.newAnswer(otherClientSparkId, response.getJSONObject("answer"));
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
+    private void gotNewAnswer(CineMessage response) {
+        String otherClientSparkId = response.getString("sparkId");
+        mStartRTC.newAnswer(otherClientSparkId, response.getJSONObject("answer"));
     }
 
-    private void memberLeft(JSONObject response) {
-        try {
-            String otherClientSparkId = response.getString("sparkId");
-            mStartRTC.memberLeft(otherClientSparkId);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
-
+    private void memberLeft(CineMessage response) {
+        String otherClientSparkId = response.getString("sparkId");
+        mStartRTC.memberLeft(otherClientSparkId);
     }
 
     //    "{\"action\":\"member\",\"room\":\"hello\",\"sparkId\":\"5fa684d5-708b-4674-b548-b8b12011aa02\"}"
-    private void gotNewMember(JSONObject response) {
-        try {
-            String otherClientSparkId = response.getString("sparkId");
-            mStartRTC.newMember(otherClientSparkId);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
+    private void gotNewMember(CineMessage response) {
+        String otherClientSparkId = response.getString("sparkId");
+        mStartRTC.newMember(otherClientSparkId);
     }
 
 
-    private void gotAllServers(JSONObject response) {
+    private void gotAllServers(CineMessage response) {
         if (receivedAllServer) {
             return;
         }
@@ -289,7 +286,7 @@ public class MyActivity extends Activity {
         try {
             JSONArray allServers = response.getJSONArray("data");
             for (int i = 0; i < allServers.length(); i++) {
-                JSONObject iceServerData = (JSONObject) allServers.get(i);
+                JSONObject iceServerData = allServers.getJSONObject(i);
                 String url = iceServerData.getString("url");
                 if (url.startsWith("stun:")) {
                     Log.v(TAG, "Addding ice stun server: " + url);
@@ -302,9 +299,32 @@ public class MyActivity extends Activity {
                     mStartRTC.addTurnServer(url, username, credential);
                 }
             }
+            processPendingMessages();
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    public void addStream(final MediaStream stream) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                stream.videoTracks.get(0).addRenderer(
+                        new VideoRenderer(remoteRender));
+            }
+        });
+    }
+
+    public void removeStream(final MediaStream stream) {
+        runOnUiThread(new Runnable() {
+            public void run() {
+                Log.d(TAG, "DISPOSING OF STREAM");
+                // causes the app to crash
+                // stream.dispose();
+                Log.d(TAG, "DISPOSED OF STREAM");
+            }
+        });
+
     }
 
 

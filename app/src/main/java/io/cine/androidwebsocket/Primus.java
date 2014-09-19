@@ -15,6 +15,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Random;
 
 /**
@@ -26,15 +28,13 @@ public class Primus {
     private final Activity activity;
     private final String baseUrl;
     private final String url;
+    private final Queue<String> messages;
     public WebSocket webSocket;
     private Handler mHandler;
     private PrimusDataCallback dataCallback;
     private PrimusOpenCallback openCallback;
     private PrimusWebSocketCallback websocketCallback;
     private int currentTimerRun;
-    private String apiKey;
-    private String identity;
-
     Runnable myTask = new Runnable() {
         @Override
         public void run() {
@@ -44,6 +44,7 @@ public class Primus {
                 currentTimerRun = 0;
                 Log.v(TAG, "Reconnecting to primus");
                 throw new RuntimeException("SOCKET IS CLOSED! FUCKED!");
+//                reconnect();
             }
             if (currentTimerRun >= 10) {
                 currentTimerRun = 0;
@@ -57,6 +58,9 @@ public class Primus {
             scheduleHeartbeat();
         }
     };
+    private String apiKey;
+    private String identity;
+    private boolean connecting;
 
     private Primus(Activity activity, String baseUrl) {
         this.activity = activity;
@@ -65,22 +69,24 @@ public class Primus {
         Log.v(TAG, url);
         mHandler = new Handler();
         currentTimerRun = 0;
-        reconnect();
-    }
-
-    public void init(String apiKey){
-        this.apiKey = apiKey;
+        messages = new LinkedList<String>();
+        connecting = true;
+        createNewWebsocket();
     }
 
     public static Primus connect(MyActivity activity, String url) {
         return new Primus(activity, url);
     }
 
-    public void setDataCallback(Primus.PrimusDataCallback callback) {
+    public void init(String apiKey) {
+        this.apiKey = apiKey;
+    }
+
+    public void setDataCallback(PrimusDataCallback callback) {
         this.dataCallback = callback;
     }
 
-    public void setWebSocketCallback(Primus.PrimusWebSocketCallback callback) {
+    public void setWebSocketCallback(PrimusWebSocketCallback callback) {
         this.websocketCallback = callback;
     }
 
@@ -93,7 +99,7 @@ public class Primus {
         return "ws";
     }
 
-    private void reconnect() {
+    private void createNewWebsocket() {
         AsyncHttpClient.getDefaultInstance().websocket(url, getProtocolFromUrl(), new AsyncHttpClient.WebSocketConnectCallback() {
 
             @Override
@@ -105,6 +111,7 @@ public class Primus {
                     return;
                 }
                 webSocket = returnedWebsocket;
+                connecting = false;
 
                 webSocket.setDataCallback(new DataCallback() {
                     @Override
@@ -219,32 +226,67 @@ public class Primus {
     private void sendRawToWebSocket(String data) {
         data = "[\"" + data + "\"]";
         Log.v(TAG, data);
-        webSocket.send(data);
+        scheduleMessage(data);
     }
 
-    public void onPause() {
+    public void end() {
         cancelHeartbeat();
-        webSocket.end();
+        if (webSocket != null) {
+            webSocket.end();
+        }
     }
 
     public void send(final JSONObject j) {
         try {
             j.put("source", "android");
             j.put("apikey", this.apiKey);
-            Log.d(TAG, "SENDING STUFF: " + j.toString());
-            activity.runOnUiThread(new Runnable() {
-                public void run() {
-                    try {
-                        webSocket.send(j.toString(4));
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-
+            Log.d(TAG, "QUEUEING TO SEND: " + j.toString());
+            scheduleMessage(j.toString(4));
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    private void scheduleMessage(String j) {
+        messages.add(j);
+        processScheduledMessages();
+    }
+
+    private void processScheduledMessages() {
+        boolean brokenPipe = false;
+        if (webSocket.isOpen()) {
+            while (!brokenPipe && !messages.isEmpty()) {
+                String message = messages.remove();
+                Log.d(TAG, "ACTUALLY SENDING: " + message);
+                actuallySendMessage(message);
+            }
+        }else{
+            reconnect();
+        }
+    }
+
+    private void reconnect() {
+        // if we're already connecting, don't try to reconnect;
+        if(connecting){
+            return;
+        }
+        connecting = true;
+        end();
+        createNewWebsocket();
+    }
+
+    private void actuallySendMessage(final String message) {
+        activity.runOnUiThread(new Runnable() {
+            public void run() {
+                webSocket.send(message);
+            }
+        });
+    }
+
+    private void reConnectAndSendLater(JSONObject j) {
+        Log.v(TAG, "HERE IS WHERE I RECONNECT");
+//        TODO: make this work;
+//        throw new RuntimeException("WEBSOCKET NOT OPEN WHEN SENDING!");
     }
 
     public void sendToOtherSpark(String mOtherClientSparkId, JSONObject j) {
