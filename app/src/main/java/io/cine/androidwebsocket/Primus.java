@@ -248,7 +248,7 @@ public class Primus {
     }
 
     private boolean websocketIsOpen() {
-        if (mWebSocket == null){
+        if (mWebSocket == null) {
             return false;
         }
         return mWebSocket.isOpen();
