@@ -9,9 +9,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.webrtc.MediaConstraints;
 import org.webrtc.MediaStream;
 import org.webrtc.PeerConnectionFactory;
@@ -20,9 +17,6 @@ import org.webrtc.VideoRenderer;
 import org.webrtc.VideoRendererGui;
 import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
-
-import java.util.LinkedList;
-import java.util.Queue;
 
 import io.cine.androidwebsocket.receiver.GcmRegisterer;
 import io.cine.androidwebsocket.receiver.PlayUnavailableException;
@@ -37,15 +31,12 @@ public class MyActivity extends Activity {
     private AppRTCGLView vsv;
     private boolean factoryStaticInitialized;
     private MediaStream lMS;
-    private SignalingConnection signalingConnection;
-    private boolean receivedAllServer;
+    private SignalingConnection mSignalingConnection;
     private VideoSource videoSource;
-    private Queue<CineMessage> onConnectActions;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        receivedAllServer = false;
         if (!factoryStaticInitialized) {
             RTCHelper.abortUnless(PeerConnectionFactory.initializeAndroidGlobals(
                             this, true, true),
@@ -53,111 +44,52 @@ public class MyActivity extends Activity {
             );
             factoryStaticInitialized = true;
         }
+        registerWithCine();
+        connectToCine();
+        prepareLayout();
+        startMediaStream();
+    }
+
+    private void registerWithCine() {
         try {
             GcmRegisterer.registerWithCine(this);
         } catch (PlayUnavailableException e) {
             Log.v(TAG, "Google Play is unavailable");
             e.printStackTrace();
         }
-        onConnectActions = new LinkedList<CineMessage>();
-        connect();
-        startRTC();
-        prepareLayout();
-        startVideo();
+
     }
 
-//    // You need to do the Play Services APK check here too.
-//    @Override
-//    protected void onResume() {
-//        super.onResume();
-//    }
+    // You need to do the Play Services APK check here too.
+    @Override
+    protected void onResume() {
+        super.onResume();
+        registerWithCine();
+    }
 
     protected void onNewIntent(Intent intent) {
         Bundle extras = intent.getExtras();
         if (extras != null) {
             Log.v(TAG, "SOME EXTRAS" + extras.toString());
-            onConnectActions.add(new CineMessage(extras));
-            processPendingMessages();
-//            connect();
+            mSignalingConnection.newMessage(new CineMessage(extras));
         } else {
             Log.v(TAG, "NO extras");
         }
     }
 
-
     @Override
     protected void onPause() {
         super.onPause();
-        signalingConnection.end();
+        mSignalingConnection.end();
     }
 
-    private void processPendingMessages() {
-        signalingConnection.joinRoom("hello");
-        while (!onConnectActions.isEmpty()) {
-            CineMessage message = onConnectActions.remove();
-            Log.v(TAG, "HANDLING CINE MESSAGE: " + message.getAction());
-            handleCineMessage(message);
-        }
-    }
-
-    private void startRTC() {
-        mPeerConnectionsManager = new PeerConnectionsManager(this, signalingConnection);
-    }
-
-    private void connect() {
-//        if (signalingConnection != null) {
-//            signalingConnection.end();
-//            receivedAllServer = false;
-//        }
-        signalingConnection = SignalingConnection.connect(this);
-        signalingConnection.init("TEST_API_KEY");
-        signalingConnection.setOpenCallback(new Primus.PrimusOpenCallback() {
-            @Override
-            public void onOpen() {
-//                processPendingMessages();
-            }
-        });
-        signalingConnection.setDataCallback(new Primus.PrimusDataCallback() {
-
-            @Override
-            public void onData(JSONObject response) {
-                Log.v(TAG, "parsed response");
-                handleCineMessage(new CineMessage(response));
-            }
-        });
-    }
-
-    private void handleCineMessage(CineMessage message) {
-        String action = message.getAction();
-        Log.v(TAG, "action is: " + action);
-        if (action.equals("allservers")) {
-            Log.v(TAG, "GOT ALL SERVERS");
-            gotAllServers(message);
-        } else if (action.equals("member")) {
-            Log.v(TAG, "GOT new member");
-            gotNewMember(message);
-        } else if (action.equals("offer")) {
-            Log.v(TAG, "GOT new offer");
-            gotNewOffer(message);
-        } else if (action.equals("answer")) {
-            Log.v(TAG, "GOT new answer");
-            gotNewAnswer(message);
-        } else if (action.equals("ice")) {
-            Log.v(TAG, "GOT new ice");
-            gotNewIce(message);
-        } else if (action.equals("leave")) {
-            Log.v(TAG, "GOT new leave");
-            memberLeft(message);
-        } else if (action.equals("incomingcall")) {
-            Log.v(TAG, "GOT new incoming call");
-            handleCall(message);
-        } else {
-            Log.v(TAG, "Unknown action");
-        }
-    }
-
-    private void handleCall(CineMessage response) {
-        signalingConnection.joinRoom(response.getString("room"));
+    private void connectToCine() {
+        mPeerConnectionsManager = new PeerConnectionsManager(this);
+        mSignalingConnection = SignalingConnection.connect(this);
+        mSignalingConnection.init("TEST_API_KEY");
+        mPeerConnectionsManager.setSignalingConnection(mSignalingConnection);
+        mSignalingConnection.setPeerConnectionsManager(mPeerConnectionsManager);
+        mSignalingConnection.joinRoom("hello");
     }
 
     private void prepareLayout() {
@@ -173,7 +105,7 @@ public class MyActivity extends Activity {
     }
 
 
-    private void startVideo() {
+    private void startMediaStream() {
         AudioManager audioManager =
                 ((AudioManager) getSystemService(AUDIO_SERVICE));
         // TODO(fischman): figure out how to do this Right(tm) and remove the
@@ -215,7 +147,6 @@ public class MyActivity extends Activity {
                 factory.createAudioSource(blankMediaConstraints)));
 //        }
         mPeerConnectionsManager.setMediaStream(lMS);
-
     }
 
     // Cycle through likely device names for the camera and return the first
@@ -243,60 +174,6 @@ public class MyActivity extends Activity {
             }
         }
         throw new RuntimeException("Failed to open capturer");
-    }
-
-    private void gotNewIce(CineMessage response) {
-        String otherClientSparkId = response.getString("sparkId");
-
-        mPeerConnectionsManager.newIce(otherClientSparkId, response.getJSONObject("candidate"));
-    }
-
-    private void gotNewOffer(CineMessage response) {
-        String otherClientSparkId = response.getString("sparkId");
-        mPeerConnectionsManager.newOffer(otherClientSparkId, response.getJSONObject("offer"));
-    }
-
-    private void gotNewAnswer(CineMessage response) {
-        String otherClientSparkId = response.getString("sparkId");
-        mPeerConnectionsManager.newAnswer(otherClientSparkId, response.getJSONObject("answer"));
-    }
-
-    private void memberLeft(CineMessage response) {
-        String otherClientSparkId = response.getString("sparkId");
-        mPeerConnectionsManager.memberLeft(otherClientSparkId);
-    }
-
-    //    "{\"action\":\"member\",\"room\":\"hello\",\"sparkId\":\"5fa684d5-708b-4674-b548-b8b12011aa02\"}"
-    private void gotNewMember(CineMessage response) {
-        String otherClientSparkId = response.getString("sparkId");
-        mPeerConnectionsManager.newMember(otherClientSparkId);
-    }
-
-    private void gotAllServers(CineMessage response) {
-        if (receivedAllServer) {
-            return;
-        }
-        receivedAllServer = true;
-        try {
-            JSONArray allServers = response.getJSONArray("data");
-            for (int i = 0; i < allServers.length(); i++) {
-                JSONObject iceServerData = allServers.getJSONObject(i);
-                String url = iceServerData.getString("url");
-                if (url.startsWith("stun:")) {
-                    Log.v(TAG, "Addding ice stun server: " + url);
-                    mPeerConnectionsManager.addStunServer(url);
-                } else {
-                    String credential = iceServerData.getString("credential");
-                    String username = iceServerData.getString("username");
-                    Log.v(TAG, "Addding ice turn server: " + url);
-//                    url, credential, username
-                    mPeerConnectionsManager.addTurnServer(url, username, credential);
-                }
-            }
-            processPendingMessages();
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
     }
 
     public void addStream(final MediaStream stream) {

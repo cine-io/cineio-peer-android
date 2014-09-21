@@ -26,9 +26,8 @@ public class PeerConnectionsManager {
     private MediaStream mediaStream;
     private ArrayList<PeerConnection.IceServer> servers;
 
-    public PeerConnectionsManager(MyActivity activity, SignalingConnection signalingConnection) {
+    public PeerConnectionsManager(MyActivity activity) {
         mActivity = activity;
-        this.signalingConnection = signalingConnection;
         this.rtcMembers = new HashMap<String, RTCMember>();
         servers = new ArrayList<PeerConnection.IceServer>();
     }
@@ -164,5 +163,9 @@ public class PeerConnectionsManager {
         if (rtc != null) {
             rtc.dispose();
         }
+    }
+
+    public void setSignalingConnection(SignalingConnection signalingConnection) {
+        this.signalingConnection = signalingConnection;
     }
 }

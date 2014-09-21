@@ -29,18 +29,19 @@ public class Primus {
     private final String baseUrl;
     private final String url;
     private final Queue<String> messages;
-    public WebSocket webSocket;
+    public WebSocket mWebSocket;
     private Handler mHandler;
     private PrimusDataCallback dataCallback;
     private PrimusOpenCallback openCallback;
     private PrimusWebSocketCallback websocketCallback;
     private int currentTimerRun;
-    Runnable myTask = new Runnable() {
+
+    Runnable heartbeatTask = new Runnable() {
         @Override
         public void run() {
             currentTimerRun++;
             // send a heartbeat every 10 seconds
-            if (!webSocket.isOpen()) {
+            if (!websocketIsOpen()) {
                 currentTimerRun = 0;
                 Log.v(TAG, "Reconnecting to primus");
                 throw new RuntimeException("SOCKET IS CLOSED! FUCKED!");
@@ -50,7 +51,7 @@ public class Primus {
                 currentTimerRun = 0;
                 String ping = "primus::ping::" + System.currentTimeMillis();
                 // Log.v(TAG, "SENDING PING - " + ping);
-                Log.v(TAG, webSocket.isOpen() ? "socket open" : "socket closed");
+                Log.v(TAG, websocketIsOpen() ? "socket open" : "socket closed");
                 sendRawToWebSocket(ping);
             } else {
 //                Log.v(TAG, "did not send ping: "+currentTimerRun);
@@ -104,10 +105,10 @@ public class Primus {
                     ex.printStackTrace();
                     return;
                 }
-                webSocket = returnedWebsocket;
+                mWebSocket = returnedWebsocket;
                 connecting = false;
 
-                webSocket.setDataCallback(new DataCallback() {
+                mWebSocket.setDataCallback(new DataCallback() {
                     @Override
                     public void onDataAvailable(DataEmitter dataEmitter, ByteBufferList byteBufferList) {
                         Log.v(TAG, "I got some bytes!");
@@ -116,7 +117,7 @@ public class Primus {
                     }
                 });
 
-                webSocket.setClosedCallback(new CompletedCallback() {
+                mWebSocket.setClosedCallback(new CompletedCallback() {
                     @Override
                     public void onCompleted(Exception e) {
                         if (e != null) {
@@ -126,7 +127,7 @@ public class Primus {
                         Log.v(TAG, "ws: closedCallback onCompleted");
                     }
                 });
-                webSocket.setEndCallback(new CompletedCallback() {
+                mWebSocket.setEndCallback(new CompletedCallback() {
                     @Override
                     public void onCompleted(Exception e) {
                         if (e != null) {
@@ -137,7 +138,7 @@ public class Primus {
                         Log.d(TAG, "ws: endCallback onCompleted");
                     }
                 });
-                webSocket.setStringCallback(new WebSocket.StringCallback() {
+                mWebSocket.setStringCallback(new WebSocket.StringCallback() {
                     public void onStringAvailable(String s) {
                         Log.v(TAG, "got string: " + s);
                         try {
@@ -167,7 +168,7 @@ public class Primus {
                 });
                 scheduleHeartbeat();
                 if (websocketCallback != null) {
-                    websocketCallback.onWebSocket(webSocket);
+                    websocketCallback.onWebSocket(mWebSocket);
                 }
 
             }
@@ -177,11 +178,11 @@ public class Primus {
     }
 
     private void scheduleHeartbeat() {
-        mHandler.postDelayed(myTask, 1000);
+        mHandler.postDelayed(heartbeatTask, 1000);
     }
 
     private void cancelHeartbeat() {
-        mHandler.removeCallbacks(myTask);
+        mHandler.removeCallbacks(heartbeatTask);
     }
 
     private char randomCharacterFromDictionary() {
@@ -213,8 +214,8 @@ public class Primus {
 
     public void end() {
         cancelHeartbeat();
-        if (webSocket != null) {
-            webSocket.end();
+        if (mWebSocket != null) {
+            mWebSocket.end();
         }
     }
 
@@ -235,7 +236,7 @@ public class Primus {
     private void processScheduledMessages() {
 //        unfortunately there seems to be a broken pipe issue.
         boolean brokenPipe = false;
-        if (webSocket.isOpen()) {
+        if (websocketIsOpen()) {
             while (!brokenPipe && !messages.isEmpty()) {
                 String message = messages.remove();
                 Log.d(TAG, "ACTUALLY SENDING: " + message);
@@ -244,6 +245,13 @@ public class Primus {
         } else {
             reconnect();
         }
+    }
+
+    private boolean websocketIsOpen() {
+        if (mWebSocket == null){
+            return false;
+        }
+        return mWebSocket.isOpen();
     }
 
     private void reconnect() {
@@ -259,7 +267,7 @@ public class Primus {
     private void actuallySendMessage(final String message) {
         activity.runOnUiThread(new Runnable() {
             public void run() {
-                webSocket.send(message);
+                mWebSocket.send(message);
             }
         });
     }
