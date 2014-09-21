@@ -89,7 +89,6 @@ public class MyActivity extends Activity {
         mSignalingConnection.init("TEST_API_KEY");
         mPeerConnectionsManager.setSignalingConnection(mSignalingConnection);
         mSignalingConnection.setPeerConnectionsManager(mPeerConnectionsManager);
-        mSignalingConnection.joinRoom("hello");
     }
 
     private void prepareLayout() {
