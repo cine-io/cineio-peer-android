@@ -17,7 +17,7 @@ import java.util.HashMap;
 /**
  * Created by thomas on 9/11/14.
  */
-public class StartRTC {
+public class PeerConnectionsManager {
     private static final String TAG = "StartRTC";
     private static PeerConnectionFactory factory;
     private final MyActivity mActivity;
@@ -26,7 +26,7 @@ public class StartRTC {
     private MediaStream mediaStream;
     private ArrayList<PeerConnection.IceServer> servers;
 
-    public StartRTC(MyActivity activity, SignalingConnection signalingConnection) {
+    public PeerConnectionsManager(MyActivity activity, SignalingConnection signalingConnection) {
         mActivity = activity;
         this.signalingConnection = signalingConnection;
         this.rtcMembers = new HashMap<String, RTCMember>();
@@ -41,8 +41,8 @@ public class StartRTC {
         return factory;
     }
 
-    public void addStunServer(String iceServer) {
-        servers.add(new PeerConnection.IceServer(iceServer));
+    public void addStunServer(String url) {
+        servers.add(new PeerConnection.IceServer(url));
     }
 
     public void addTurnServer(String url, String username, String password) {
@@ -55,7 +55,7 @@ public class StartRTC {
     }
 
     //    TODO: ensure iceServers are added
-    public PeerConnection createPeerConnection(String otherClientSparkId, boolean isInitiator) {
+    private PeerConnection createPeerConnection(String otherClientSparkId, boolean isInitiator) {
         Log.d(TAG, "creating new peer connection for: " + otherClientSparkId);
         PeerObserver observer = new PeerObserver(mActivity, signalingConnection, otherClientSparkId);
         Log.d(TAG, "created new peer observer");

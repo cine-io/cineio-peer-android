@@ -31,7 +31,7 @@ import io.cine.androidwebsocket.receiver.PlayUnavailableException;
 public class MyActivity extends Activity {
     private static final String TAG = "AndroidWebsocketTest";
 
-    private StartRTC mStartRTC;
+    private PeerConnectionsManager mPeerConnectionsManager;
     private VideoRenderer.Callbacks localRender;
     private VideoRenderer.Callbacks remoteRender;
     private AppRTCGLView vsv;
@@ -101,7 +101,7 @@ public class MyActivity extends Activity {
     }
 
     private void startRTC() {
-        mStartRTC = new StartRTC(this, signalingConnection);
+        mPeerConnectionsManager = new PeerConnectionsManager(this, signalingConnection);
     }
 
     private void connect() {
@@ -128,7 +128,7 @@ public class MyActivity extends Activity {
     }
 
     private void handleCineMessage(CineMessage message) {
-        String action = message.getString("action");
+        String action = message.getAction();
         Log.v(TAG, "action is: " + action);
         if (action.equals("allservers")) {
             Log.v(TAG, "GOT ALL SERVERS");
@@ -194,7 +194,7 @@ public class MyActivity extends Activity {
         constraints.optional.add(new MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"));
 
         Log.d(TAG, "Creating local video source...");
-        PeerConnectionFactory factory = StartRTC.getFactory();
+        PeerConnectionFactory factory = PeerConnectionsManager.getFactory();
         Log.v(TAG, "1");
         MediaConstraints blankMediaConstraints = new MediaConstraints();
 
@@ -214,7 +214,7 @@ public class MyActivity extends Activity {
                 "ARDAMSa0",
                 factory.createAudioSource(blankMediaConstraints)));
 //        }
-        mStartRTC.setMediaStream(lMS);
+        mPeerConnectionsManager.setMediaStream(lMS);
 
     }
 
@@ -248,30 +248,29 @@ public class MyActivity extends Activity {
     private void gotNewIce(CineMessage response) {
         String otherClientSparkId = response.getString("sparkId");
 
-        mStartRTC.newIce(otherClientSparkId, response.getJSONObject("candidate"));
+        mPeerConnectionsManager.newIce(otherClientSparkId, response.getJSONObject("candidate"));
     }
 
     private void gotNewOffer(CineMessage response) {
         String otherClientSparkId = response.getString("sparkId");
-        mStartRTC.newOffer(otherClientSparkId, response.getJSONObject("offer"));
+        mPeerConnectionsManager.newOffer(otherClientSparkId, response.getJSONObject("offer"));
     }
 
     private void gotNewAnswer(CineMessage response) {
         String otherClientSparkId = response.getString("sparkId");
-        mStartRTC.newAnswer(otherClientSparkId, response.getJSONObject("answer"));
+        mPeerConnectionsManager.newAnswer(otherClientSparkId, response.getJSONObject("answer"));
     }
 
     private void memberLeft(CineMessage response) {
         String otherClientSparkId = response.getString("sparkId");
-        mStartRTC.memberLeft(otherClientSparkId);
+        mPeerConnectionsManager.memberLeft(otherClientSparkId);
     }
 
     //    "{\"action\":\"member\",\"room\":\"hello\",\"sparkId\":\"5fa684d5-708b-4674-b548-b8b12011aa02\"}"
     private void gotNewMember(CineMessage response) {
         String otherClientSparkId = response.getString("sparkId");
-        mStartRTC.newMember(otherClientSparkId);
+        mPeerConnectionsManager.newMember(otherClientSparkId);
     }
-
 
     private void gotAllServers(CineMessage response) {
         if (receivedAllServer) {
@@ -285,13 +284,13 @@ public class MyActivity extends Activity {
                 String url = iceServerData.getString("url");
                 if (url.startsWith("stun:")) {
                     Log.v(TAG, "Addding ice stun server: " + url);
-                    mStartRTC.addStunServer(url);
+                    mPeerConnectionsManager.addStunServer(url);
                 } else {
                     String credential = iceServerData.getString("credential");
                     String username = iceServerData.getString("username");
                     Log.v(TAG, "Addding ice turn server: " + url);
 //                    url, credential, username
-                    mStartRTC.addTurnServer(url, username, credential);
+                    mPeerConnectionsManager.addTurnServer(url, username, credential);
                 }
             }
             processPendingMessages();
