@@ -20,7 +20,7 @@ import java.util.Queue;
 import java.util.Random;
 
 /**
- * Created by thomas on 9/15/14.
+ * Created by thomas on 9/21/14.
  */
 public class Primus {
     private static final String TAG = "Primus";
@@ -58,8 +58,6 @@ public class Primus {
             scheduleHeartbeat();
         }
     };
-    private String apiKey;
-    private String identity;
     private boolean connecting;
 
     private Primus(Activity activity, String baseUrl) {
@@ -74,12 +72,8 @@ public class Primus {
         createNewWebsocket();
     }
 
-    public static Primus connect(MyActivity activity, String url) {
+    public static Primus connect(Activity activity, String url) {
         return new Primus(activity, url);
-    }
-
-    public void init(String apiKey) {
-        this.apiKey = apiKey;
     }
 
     public void setDataCallback(PrimusDataCallback callback) {
@@ -190,18 +184,6 @@ public class Primus {
         mHandler.removeCallbacks(myTask);
     }
 
-    public void joinRoom(String room) {
-        try {
-            JSONObject j = new JSONObject();
-            j.put("action", "join");
-            j.put("room", room);
-            Log.v(TAG, "joining room: " + room);
-            send(j);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
-
     private char randomCharacterFromDictionary() {
         int rand = (int) (Math.random() * dictionary.length());
         return dictionary.charAt(rand);
@@ -238,8 +220,6 @@ public class Primus {
 
     public void send(final JSONObject j) {
         try {
-            j.put("source", "android");
-            j.put("apikey", this.apiKey);
             Log.d(TAG, "QUEUEING TO SEND: " + j.toString());
             scheduleMessage(j.toString(4));
         } catch (JSONException e) {
@@ -253,6 +233,7 @@ public class Primus {
     }
 
     private void processScheduledMessages() {
+//        unfortunately there seems to be a broken pipe issue.
         boolean brokenPipe = false;
         if (webSocket.isOpen()) {
             while (!brokenPipe && !messages.isEmpty()) {
@@ -260,14 +241,14 @@ public class Primus {
                 Log.d(TAG, "ACTUALLY SENDING: " + message);
                 actuallySendMessage(message);
             }
-        }else{
+        } else {
             reconnect();
         }
     }
 
     private void reconnect() {
         // if we're already connecting, don't try to reconnect;
-        if(connecting){
+        if (connecting) {
             return;
         }
         connecting = true;
@@ -287,42 +268,6 @@ public class Primus {
         Log.v(TAG, "HERE IS WHERE I RECONNECT");
 //        TODO: make this work;
 //        throw new RuntimeException("WEBSOCKET NOT OPEN WHEN SENDING!");
-    }
-
-    public void sendToOtherSpark(String mOtherClientSparkId, JSONObject j) {
-        try {
-            j.put("sparkId", mOtherClientSparkId);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        send(j);
-    }
-
-    public void identify(String identity) {
-        try {
-            this.identity = identity;
-            JSONObject j = new JSONObject();
-            j.put("action", "identify");
-            j.put("identity", identity);
-            Log.v(TAG, "identifying: " + identity);
-            send(j);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    public void call(String otherIdentity) {
-        try {
-            JSONObject j = new JSONObject();
-            j.put("action", "call");
-            j.put("identity", this.identity);
-            j.put("otheridentity", otherIdentity);
-            Log.v(TAG, "calling: " + identity);
-            send(j);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
     }
 
     public static interface PrimusWebSocketCallback {

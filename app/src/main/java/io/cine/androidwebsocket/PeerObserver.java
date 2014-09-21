@@ -2,8 +2,6 @@ package io.cine.androidwebsocket;
 
 import android.util.Log;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.webrtc.DataChannel;
 import org.webrtc.IceCandidate;
 import org.webrtc.MediaStream;
@@ -14,36 +12,21 @@ import org.webrtc.PeerConnection;
  */
 class PeerObserver implements PeerConnection.Observer {
     private static final String TAG = "PeerObserver";
-    private final Primus primus;
+    private final SignalingConnection signalingConnection;
     private final String mOtherClientSparkId;
     private final MyActivity mActivity;
     private MediaStream addedStream;
 
-    public PeerObserver(MyActivity activity, Primus primus, String otherClientSparkId) {
+    public PeerObserver(MyActivity activity, SignalingConnection signalingConnection, String otherClientSparkId) {
         mActivity = activity;
-        this.primus = primus;
+        this.signalingConnection = signalingConnection;
         mOtherClientSparkId = otherClientSparkId;
     }
 
     @Override
     public void onIceCandidate(IceCandidate candidate) {
-
         Log.d(TAG, "onIceCandidate");
-        try {
-            JSONObject candidateObject = new JSONObject();
-            candidateObject.put("candidate", candidate.sdp);
-            candidateObject.put("sdpMid", candidate.sdpMid);
-            candidateObject.put("sdpMLineIndex", candidate.sdpMLineIndex);
-            JSONObject j = new JSONObject();
-            j.put("action", "ice");
-            JSONObject candidateMiddleMan = new JSONObject();
-            candidateMiddleMan.put("candidate", candidateObject);
-            j.put("candidate", candidateMiddleMan);
-
-            primus.sendToOtherSpark(mOtherClientSparkId, j);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        signalingConnection.sendIceCandidate(mOtherClientSparkId, candidate);
     }
 
     @Override

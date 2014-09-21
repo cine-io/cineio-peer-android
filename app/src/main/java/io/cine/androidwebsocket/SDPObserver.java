@@ -22,16 +22,16 @@ public class SDPObserver implements SdpObserver {
     private final Activity mActivity;
     private final PeerConnection peerConnection;
     private final String mOtherClientSparkId;
-    private final Primus primus;
+    private final SignalingConnection signalingConnection;
     private final MediaConstraints constraints;
     private final boolean isInitiator;
     private SessionDescription localSdp;
 
-    public SDPObserver(String otherClientSparkId, PeerConnection peerConnection, MediaConstraints constraints, Primus primus, MyActivity activity, boolean isInitiator) {
+    public SDPObserver(String otherClientSparkId, PeerConnection peerConnection, MediaConstraints constraints, SignalingConnection signalingConnection, MyActivity activity, boolean isInitiator) {
         this.mActivity = activity;
         this.peerConnection = peerConnection;
         mOtherClientSparkId = otherClientSparkId;
-        this.primus = primus;
+        this.signalingConnection = signalingConnection;
         this.constraints = constraints;
         this.isInitiator = isInitiator;
     }
@@ -66,14 +66,7 @@ public class SDPObserver implements SdpObserver {
     // we might want to filter elsewhere.
     private void sendLocalDescription() {
         Log.d(TAG, "Sending " + localSdp.type);
-        JSONObject sdpJSON = new JSONObject();
-        String type = localSdp.type.canonicalForm();
-        jsonPut(sdpJSON, "type", type);
-        jsonPut(sdpJSON, "sdp", localSdp.description);
-        JSONObject json = new JSONObject();
-        jsonPut(json, type, sdpJSON);
-        jsonPut(json, "action", type);
-        primus.sendToOtherSpark(mOtherClientSparkId, json);
+        signalingConnection.sendLocalDescription(mOtherClientSparkId, localSdp);
     }
 
     @Override

@@ -15,6 +15,7 @@ public class CineMessage {
     private JSONObject json;
     private Bundle bundle;
     private KIND kind;
+
     public CineMessage(JSONObject json) {
         this.json = json;
         this.kind = KIND.JSON;

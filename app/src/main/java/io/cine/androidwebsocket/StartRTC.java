@@ -22,13 +22,13 @@ public class StartRTC {
     private static PeerConnectionFactory factory;
     private final MyActivity mActivity;
     private final HashMap<String, RTCMember> rtcMembers;
-    private Primus primus;
+    private SignalingConnection signalingConnection;
     private MediaStream mediaStream;
     private ArrayList<PeerConnection.IceServer> servers;
 
-    public StartRTC(MyActivity activity, Primus primus) {
+    public StartRTC(MyActivity activity, SignalingConnection signalingConnection) {
         mActivity = activity;
-        this.primus = primus;
+        this.signalingConnection = signalingConnection;
         this.rtcMembers = new HashMap<String, RTCMember>();
         servers = new ArrayList<PeerConnection.IceServer>();
     }
@@ -57,7 +57,7 @@ public class StartRTC {
     //    TODO: ensure iceServers are added
     public PeerConnection createPeerConnection(String otherClientSparkId, boolean isInitiator) {
         Log.d(TAG, "creating new peer connection for: " + otherClientSparkId);
-        PeerObserver observer = new PeerObserver(mActivity, primus, otherClientSparkId);
+        PeerObserver observer = new PeerObserver(mActivity, signalingConnection, otherClientSparkId);
         Log.d(TAG, "created new peer observer");
 
         MediaConstraints constraints = new MediaConstraints();
@@ -75,7 +75,7 @@ public class StartRTC {
         peerConnection.addStream(mediaStream, new MediaConstraints());
         Log.d(TAG, "added stream");
 
-        SDPObserver sdpObserver = new SDPObserver(otherClientSparkId, peerConnection, constraints, primus, mActivity, isInitiator);
+        SDPObserver sdpObserver = new SDPObserver(otherClientSparkId, peerConnection, constraints, signalingConnection, mActivity, isInitiator);
         Log.d(TAG, "created sdpObserver");
 
         if (isInitiator) {
@@ -88,10 +88,6 @@ public class StartRTC {
         rtc.setPeerObserver(observer);
         rtcMembers.put(otherClientSparkId, rtc);
         return peerConnection;
-    }
-
-    public void sendMessage(JSONObject j) {
-        primus.send(j);
     }
 
     public void newIce(String otherClientSparkId, JSONObject candidateObj) {

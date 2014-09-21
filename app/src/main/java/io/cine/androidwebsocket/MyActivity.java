@@ -37,7 +37,7 @@ public class MyActivity extends Activity {
     private AppRTCGLView vsv;
     private boolean factoryStaticInitialized;
     private MediaStream lMS;
-    private Primus primus;
+    private SignalingConnection signalingConnection;
     private boolean receivedAllServer;
     private VideoSource videoSource;
     private Queue<CineMessage> onConnectActions;
@@ -88,41 +88,36 @@ public class MyActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        primus.end();
+        signalingConnection.end();
     }
 
     private void processPendingMessages() {
-//        primus.joinRoom("abcd");
-//        runOnUiThread(new Runnable() {
-//            @Override
-//            public void run() {
-                while (!onConnectActions.isEmpty()) {
-                    CineMessage message = onConnectActions.remove();
-                    Log.v(TAG, "HANDLING CINE MESSAGE: " + message.getAction());
-                    handleCineMessage(message);
-                }
-//            }
-//        });
+        signalingConnection.joinRoom("hello");
+        while (!onConnectActions.isEmpty()) {
+            CineMessage message = onConnectActions.remove();
+            Log.v(TAG, "HANDLING CINE MESSAGE: " + message.getAction());
+            handleCineMessage(message);
+        }
     }
 
     private void startRTC() {
-        mStartRTC = new StartRTC(this, primus);
+        mStartRTC = new StartRTC(this, signalingConnection);
     }
 
     private void connect() {
-//        if (primus != null) {
-//            primus.end();
+//        if (signalingConnection != null) {
+//            signalingConnection.end();
 //            receivedAllServer = false;
 //        }
-        primus = Primus.connect(this, "http://192.168.1.114:8888/primus");
-        primus.init("TEST_API_KEY");
-        primus.setOpenCallback(new Primus.PrimusOpenCallback() {
+        signalingConnection = SignalingConnection.connect(this);
+        signalingConnection.init("TEST_API_KEY");
+        signalingConnection.setOpenCallback(new Primus.PrimusOpenCallback() {
             @Override
             public void onOpen() {
 //                processPendingMessages();
             }
         });
-        primus.setDataCallback(new Primus.PrimusDataCallback() {
+        signalingConnection.setDataCallback(new Primus.PrimusDataCallback() {
 
             @Override
             public void onData(JSONObject response) {
@@ -162,7 +157,7 @@ public class MyActivity extends Activity {
     }
 
     private void handleCall(CineMessage response) {
-        primus.joinRoom(response.getString("room"));
+        signalingConnection.joinRoom(response.getString("room"));
     }
 
     private void prepareLayout() {
