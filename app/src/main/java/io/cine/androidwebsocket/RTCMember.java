@@ -51,4 +51,8 @@ public class RTCMember {
             // pc.dispose();
         }
     }
+
+    public String getSparkId() {
+        return sparkId;
+    }
 }

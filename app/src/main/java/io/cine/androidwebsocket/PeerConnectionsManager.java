@@ -20,14 +20,14 @@ import java.util.HashMap;
 public class PeerConnectionsManager {
     private static final String TAG = "StartRTC";
     private static PeerConnectionFactory factory;
-    private final MyActivity mActivity;
+    private final CinePeerClient mCinePeerClient;
     private final HashMap<String, RTCMember> rtcMembers;
     private SignalingConnection signalingConnection;
     private MediaStream mediaStream;
     private ArrayList<PeerConnection.IceServer> servers;
 
-    public PeerConnectionsManager(MyActivity activity) {
-        mActivity = activity;
+    public PeerConnectionsManager(CinePeerClient cinePeerClient) {
+        mCinePeerClient = cinePeerClient;
         this.rtcMembers = new HashMap<String, RTCMember>();
         servers = new ArrayList<PeerConnection.IceServer>();
     }
@@ -56,35 +56,27 @@ public class PeerConnectionsManager {
     //    TODO: ensure iceServers are added
     private PeerConnection createPeerConnection(String otherClientSparkId, boolean isInitiator) {
         Log.d(TAG, "creating new peer connection for: " + otherClientSparkId);
-        PeerObserver observer = new PeerObserver(mActivity, signalingConnection, otherClientSparkId);
+        RTCMember rtc = new RTCMember(otherClientSparkId);
+        PeerObserver observer = new PeerObserver(rtc, mCinePeerClient);
+        rtc.setPeerObserver(observer);
+
         Log.d(TAG, "created new peer observer");
 
-        MediaConstraints constraints = new MediaConstraints();
-
-        constraints.mandatory.add(new MediaConstraints.KeyValuePair(
-                "OfferToReceiveAudio", "true"));
-        constraints.mandatory.add(new MediaConstraints.KeyValuePair(
-                "OfferToReceiveVideo", "true"));
-
-        constraints.optional.add(new MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"));
-        Log.d(TAG, "created new constraints");
-
-        PeerConnection peerConnection = factory.createPeerConnection(servers, constraints, observer);
+        PeerConnection peerConnection = factory.createPeerConnection(servers, mCinePeerClient.getMediaConstraints(), observer);
+        rtc.setPeerConnection(peerConnection);
         Log.d(TAG, "created new peerConnection");
+//        this is supposed to be a blank media constraints
         peerConnection.addStream(mediaStream, new MediaConstraints());
         Log.d(TAG, "added stream");
 
-        SDPObserver sdpObserver = new SDPObserver(otherClientSparkId, peerConnection, constraints, signalingConnection, mActivity, isInitiator);
+        SDPObserver sdpObserver = new SDPObserver(rtc, mCinePeerClient, isInitiator);
         Log.d(TAG, "created sdpObserver");
+        rtc.setSdpObserver(sdpObserver);
 
         if (isInitiator) {
             Log.d(TAG, "creating offer");
-            peerConnection.createOffer(sdpObserver, constraints);
+            peerConnection.createOffer(sdpObserver, mCinePeerClient.getMediaConstraints());
         }
-        RTCMember rtc = new RTCMember(otherClientSparkId);
-        rtc.setSdpObserver(sdpObserver);
-        rtc.setPeerConnection(peerConnection);
-        rtc.setPeerObserver(observer);
         rtcMembers.put(otherClientSparkId, rtc);
         return peerConnection;
     }

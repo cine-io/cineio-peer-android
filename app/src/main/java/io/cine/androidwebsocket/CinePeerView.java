@@ -27,16 +27,22 @@
 
 package io.cine.androidwebsocket;
 
-import android.content.Context;
+import android.app.Activity;
 import android.graphics.Point;
 import android.opengl.GLSurfaceView;
 
-public class AppRTCGLView extends GLSurfaceView {
+import org.webrtc.VideoRendererGui;
+
+public class CinePeerView extends GLSurfaceView {
     private Point screenDimensions;
 
-    public AppRTCGLView(Context c, Point screenDimensions) {
-        super(c);
-        this.screenDimensions = screenDimensions;
+    public CinePeerView(Activity c) {
+        super(c.getApplicationContext());
+        Point displaySize = new Point();
+        c.getWindowManager().getDefaultDisplay().getRealSize(displaySize);
+
+        this.screenDimensions = displaySize;
+        VideoRendererGui.setView(this);
     }
 
     public void updateDisplaySize(Point screenDimensions) {

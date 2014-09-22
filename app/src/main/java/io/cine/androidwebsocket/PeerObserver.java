@@ -12,21 +12,20 @@ import org.webrtc.PeerConnection;
  */
 class PeerObserver implements PeerConnection.Observer {
     private static final String TAG = "PeerObserver";
-    private final SignalingConnection signalingConnection;
-    private final String mOtherClientSparkId;
-    private final MyActivity mActivity;
+    private final RTCMember rtcMember;
+    private final CinePeerClient mCinePeerClient;
     private MediaStream addedStream;
 
-    public PeerObserver(MyActivity activity, SignalingConnection signalingConnection, String otherClientSparkId) {
-        mActivity = activity;
-        this.signalingConnection = signalingConnection;
-        mOtherClientSparkId = otherClientSparkId;
+    public PeerObserver(RTCMember rtc, CinePeerClient cinePeerClient) {
+        this.rtcMember = rtc;
+        this.mCinePeerClient = cinePeerClient;
+
     }
 
     @Override
     public void onIceCandidate(IceCandidate candidate) {
         Log.d(TAG, "onIceCandidate");
-        signalingConnection.sendIceCandidate(mOtherClientSparkId, candidate);
+        mCinePeerClient.getSignalingConnection().sendIceCandidate(rtcMember.getSparkId(), candidate);
     }
 
     @Override
@@ -35,7 +34,7 @@ class PeerObserver implements PeerConnection.Observer {
         addedStream = stream;
         RTCHelper.abortUnless(stream.audioTracks.size() <= 1 && stream.videoTracks.size() <= 1, "Weird-looking stream: " + stream);
         if (stream.videoTracks.size() == 1) {
-            mActivity.addStream(stream);
+            mCinePeerClient.addStream(stream);
         }
     }
 
@@ -80,6 +79,6 @@ class PeerObserver implements PeerConnection.Observer {
 
     private void disposeOfStream(final MediaStream stream) {
         Log.d(TAG, "removing stream");
-        mActivity.removeStream(stream);
+        mCinePeerClient.removeStream(stream);
     }
 }

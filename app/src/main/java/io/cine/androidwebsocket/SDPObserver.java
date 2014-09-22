@@ -1,11 +1,7 @@
 package io.cine.androidwebsocket;
 
-import android.app.Activity;
 import android.util.Log;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.webrtc.MediaConstraints;
 import org.webrtc.PeerConnection;
 import org.webrtc.SdpObserver;
 import org.webrtc.SessionDescription;
@@ -19,30 +15,17 @@ import org.webrtc.SessionDescription;
 public class SDPObserver implements SdpObserver {
     private static final String TAG = "SDPObserver";
 
-    private final Activity mActivity;
-    private final PeerConnection peerConnection;
-    private final String mOtherClientSparkId;
-    private final SignalingConnection signalingConnection;
-    private final MediaConstraints constraints;
+    private final CinePeerClient mCinePeerClient;
     private final boolean isInitiator;
+    private final RTCMember mRTCMember;
     private SessionDescription localSdp;
 
-    public SDPObserver(String otherClientSparkId, PeerConnection peerConnection, MediaConstraints constraints, SignalingConnection signalingConnection, MyActivity activity, boolean isInitiator) {
-        this.mActivity = activity;
-        this.peerConnection = peerConnection;
-        mOtherClientSparkId = otherClientSparkId;
-        this.signalingConnection = signalingConnection;
-        this.constraints = constraints;
-        this.isInitiator = isInitiator;
-    }
 
-    // Put a |key|->|value| mapping in |json|.
-    private static void jsonPut(JSONObject json, String key, Object value) {
-        try {
-            json.put(key, value);
-        } catch (JSONException e) {
-            throw new RuntimeException(e);
-        }
+    public SDPObserver(RTCMember rtc, CinePeerClient cinePeerClient, boolean isInitiator) {
+        this.mRTCMember = rtc;
+        this.mCinePeerClient = cinePeerClient;
+        this.isInitiator = isInitiator;
+
     }
 
     @Override
@@ -52,9 +35,9 @@ public class SDPObserver implements SdpObserver {
                 origSdp.type, RTCHelper.preferISAC(origSdp.description));
         localSdp = sdp;
         final SDPObserver self = this;
-        mActivity.runOnUiThread(new Runnable() {
+        mCinePeerClient.runOnUiThread(new Runnable() {
             public void run() {
-                peerConnection.setLocalDescription(self, sdp);
+                mRTCMember.getPeerConnection().setLocalDescription(self, sdp);
             }
         });
     }
@@ -66,13 +49,14 @@ public class SDPObserver implements SdpObserver {
     // we might want to filter elsewhere.
     private void sendLocalDescription() {
         Log.d(TAG, "Sending " + localSdp.type);
-        signalingConnection.sendLocalDescription(mOtherClientSparkId, localSdp);
+        mCinePeerClient.getSignalingConnection().sendLocalDescription(mRTCMember.getSparkId(), localSdp);
     }
 
     @Override
     public void onSetSuccess() {
-        mActivity.runOnUiThread(new Runnable() {
+        mCinePeerClient.runOnUiThread(new Runnable() {
             public void run() {
+                PeerConnection peerConnection = mRTCMember.getPeerConnection();
                 if (isInitiator) {
                     if (peerConnection.getRemoteDescription() != null) {
                         // We've set our local offer and received & set the remote
@@ -86,7 +70,7 @@ public class SDPObserver implements SdpObserver {
                     if (peerConnection.getLocalDescription() == null) {
                         // We just set the remote offer, time to create our answer.
                         Log.d(TAG, "Creating answer");
-                        peerConnection.createAnswer(SDPObserver.this, constraints);
+                        peerConnection.createAnswer(SDPObserver.this, mCinePeerClient.getMediaConstraints());
                     } else {
                         // Answer now set as local description; send it and drain
                         // candidates.
@@ -99,19 +83,19 @@ public class SDPObserver implements SdpObserver {
 
     @Override
     public void onCreateFailure(final String error) {
-        mActivity.runOnUiThread(new Runnable() {
-            public void run() {
-                throw new RuntimeException("createSDP error: " + error);
-            }
-        });
+//        mCinePeerClient.runOnUiThread(new Runnable() {
+//            public void run() {
+//                throw new RuntimeException("createSDP error: " + error);
+//            }
+//        });
     }
 
     @Override
     public void onSetFailure(final String error) {
-        mActivity.runOnUiThread(new Runnable() {
-            public void run() {
-                throw new RuntimeException("setSDP error: " + error);
-            }
-        });
+//        mCinePeerClient.runOnUiThread(new Runnable() {
+//            public void run() {
+//                throw new RuntimeException("setSDP error: " + error);
+//            }
+//        });
     }
 }
