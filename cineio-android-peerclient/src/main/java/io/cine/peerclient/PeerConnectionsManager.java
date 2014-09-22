@@ -22,7 +22,6 @@ public class PeerConnectionsManager {
     private static PeerConnectionFactory factory;
     private final CinePeerClient mCinePeerClient;
     private final HashMap<String, RTCMember> rtcMembers;
-    private SignalingConnection signalingConnection;
     private MediaStream mediaStream;
     private ArrayList<PeerConnection.IceServer> servers;
 
@@ -155,10 +154,6 @@ public class PeerConnectionsManager {
         if (rtc != null) {
             rtc.dispose();
         }
-    }
-
-    public void setSignalingConnection(SignalingConnection signalingConnection) {
-        this.signalingConnection = signalingConnection;
     }
 
     public void end() {

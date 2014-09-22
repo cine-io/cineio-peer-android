@@ -42,7 +42,6 @@ public class CinePeerClient {
         mPeerConnectionsManager = new PeerConnectionsManager(this);
         mSignalingConnection = SignalingConnection.connect(config.getActivity());
         mSignalingConnection.init(config.getApiKey());
-        mPeerConnectionsManager.setSignalingConnection(mSignalingConnection);
         mSignalingConnection.setPeerConnectionsManager(mPeerConnectionsManager);
     }
 
@@ -193,6 +192,7 @@ public class CinePeerClient {
     public void removeStream(final MediaStream stream) {
         runOnUiThread(new Runnable() {
             public void run() {
+//                I don't actually know if this song and dance is valuable
                 Log.d(TAG, "DISPOSING OF STREAM");
                 Iterator<AudioTrack> it = stream.audioTracks.iterator();
                 while (it.hasNext()) {
