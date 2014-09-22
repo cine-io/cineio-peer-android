@@ -25,6 +25,7 @@ public class MyActivity extends Activity implements CinePeerRenderer {
         connectToCine();
         prepareLayout();
         cinePeerClient.startMediaStream();
+//        cinePeerClient.joinRoom("hello");
     }
 
     @Override

@@ -39,8 +39,6 @@ public class CinePeerClient {
         mSignalingConnection.init(config.getApiKey());
         mPeerConnectionsManager.setSignalingConnection(mSignalingConnection);
         mSignalingConnection.setPeerConnectionsManager(mPeerConnectionsManager);
-        mSignalingConnection.joinRoom("hello");
-
     }
 
     private void ensureFactoryGlobals() {
@@ -193,5 +191,9 @@ public class CinePeerClient {
     }
     public CinePeerView createView() {
         return new CinePeerView(mConfig.getActivity());
+    }
+
+    public void joinRoom(String room) {
+        mSignalingConnection.joinRoom(room);
     }
 }
