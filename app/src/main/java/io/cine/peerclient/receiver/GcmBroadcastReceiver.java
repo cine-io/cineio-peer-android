@@ -1,4 +1,4 @@
-package io.cine.androidwebsocket.receiver;
+package io.cine.peerclient.receiver;
 
 import android.app.Activity;
 import android.content.ComponentName;

@@ -1,4 +1,4 @@
-package io.cine.androidwebsocket;
+package io.cine.peerclient;
 
 import android.content.Context;
 import android.content.Intent;
@@ -14,8 +14,8 @@ import org.webrtc.VideoRenderer;
 import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
 
-import io.cine.androidwebsocket.receiver.GcmRegisterer;
-import io.cine.androidwebsocket.receiver.PlayUnavailableException;
+import io.cine.peerclient.receiver.GcmRegisterer;
+import io.cine.peerclient.receiver.PlayUnavailableException;
 
 /**
  * Created by thomas on 9/22/14.

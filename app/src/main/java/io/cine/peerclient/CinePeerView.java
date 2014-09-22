@@ -25,7 +25,7 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package io.cine.androidwebsocket;
+package io.cine.peerclient;
 
 import android.app.Activity;
 import android.graphics.Point;

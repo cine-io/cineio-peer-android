@@ -1,4 +1,4 @@
-package io.cine.androidwebsocket;
+package io.cine.peerclient;
 
 import android.os.Bundle;
 

@@ -1,4 +1,4 @@
-package io.cine.androidwebsocket.receiver;
+package io.cine.peerclient.receiver;
 
 import android.app.ActivityManager;
 import android.app.IntentService;
@@ -15,8 +15,8 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 
 import java.util.List;
 
-import io.cine.androidwebsocket.MyActivity;
-import io.cine.androidwebsocket.R;
+import io.cine.peerclient.MyActivity;
+import io.cine.peerclient.R;
 
 /**
  * Created by thomas on 9/18/14.

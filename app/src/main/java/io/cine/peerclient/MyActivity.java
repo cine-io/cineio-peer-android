@@ -1,4 +1,4 @@
-package io.cine.androidwebsocket;
+package io.cine.peerclient;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -11,7 +11,7 @@ import org.webrtc.PeerConnectionFactory;
 import org.webrtc.VideoRenderer;
 import org.webrtc.VideoRendererGui;
 
-import io.cine.androidwebsocket.receiver.PlayUnavailableException;
+import io.cine.peerclient.receiver.PlayUnavailableException;
 
 
 public class MyActivity extends Activity implements CinePeerRenderer{

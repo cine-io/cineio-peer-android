@@ -1,4 +1,4 @@
-package io.cine.androidwebsocket.receiver;
+package io.cine.peerclient.receiver;
 
 /**
  * Created by thomas on 9/19/14.
