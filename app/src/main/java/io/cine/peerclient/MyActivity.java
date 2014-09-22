@@ -7,7 +7,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import org.webrtc.PeerConnectionFactory;
 import org.webrtc.VideoRenderer;
 import org.webrtc.VideoRendererGui;
 
@@ -18,7 +17,6 @@ public class MyActivity extends Activity implements CinePeerRenderer {
     private static final String TAG = "AndroidWebsocketTest";
 
     private CinePeerView vsv;
-    private boolean factoryStaticInitialized;
     private CinePeerClient cinePeerClient;
     private VideoRenderer.Callbacks localRender;
     private VideoRenderer.Callbacks remoteRender;
@@ -26,13 +24,6 @@ public class MyActivity extends Activity implements CinePeerRenderer {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (!factoryStaticInitialized) {
-            RTCHelper.abortUnless(PeerConnectionFactory.initializeAndroidGlobals(
-                            this, true, true),
-                    "Failed to initializeAndroidGlobals"
-            );
-            factoryStaticInitialized = true;
-        }
         connectToCine();
         prepareLayout();
         startMediaStream();

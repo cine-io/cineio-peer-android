@@ -28,16 +28,29 @@ public class CinePeerClient {
     private final SignalingConnection mSignalingConnection;
     private MediaStream lMS;
     private VideoSource videoSource;
+    private boolean factoryStaticInitialized;
+    private VideoCapturer capturer;
 
     public CinePeerClient(CinePeerClientConfig config) {
         mConfig = config;
-
+        ensureFactoryGlobals();
         mPeerConnectionsManager = new PeerConnectionsManager(this);
         mSignalingConnection = SignalingConnection.connect(config.getActivity());
         mSignalingConnection.init(config.getApiKey());
         mPeerConnectionsManager.setSignalingConnection(mSignalingConnection);
         mSignalingConnection.setPeerConnectionsManager(mPeerConnectionsManager);
         mSignalingConnection.joinRoom("hello");
+
+    }
+
+    private void ensureFactoryGlobals() {
+        if (!factoryStaticInitialized) {
+            RTCHelper.abortUnless(PeerConnectionFactory.initializeAndroidGlobals(
+                            mConfig.getActivity(), true, true),
+                    "Failed to initializeAndroidGlobals"
+            );
+            factoryStaticInitialized = true;
+        }
 
     }
 
@@ -53,7 +66,15 @@ public class CinePeerClient {
 
 
     public void end() {
+//        close our connection to signaling.cine.io
         mSignalingConnection.end();
+//        tell the audio manager we are no longer in a call
+        getAudioManager().setMode(AudioManager.MODE_NORMAL);
+//        dispose of all the local video capture/rendering
+//        NOTE: Order is important here. This order seems to work/not crash.
+        capturer.dispose();
+        lMS.dispose();
+        videoSource.dispose();
     }
 
     public void newIntent(Intent intent) {
@@ -67,10 +88,13 @@ public class CinePeerClient {
 
     }
 
+    private AudioManager getAudioManager() {
+        return (AudioManager) mConfig.getActivity().getSystemService(Context.AUDIO_SERVICE);
+    }
+
     public void startMediaStream() {
 
-        AudioManager audioManager =
-                ((AudioManager) mConfig.getActivity().getSystemService(Context.AUDIO_SERVICE));
+        AudioManager audioManager = getAudioManager();
         // TODO(fischman): figure out how to do this Right(tm) and remove the
         // suppression.
         @SuppressWarnings("deprecation")
@@ -79,15 +103,6 @@ public class CinePeerClient {
                 AudioManager.MODE_IN_CALL : AudioManager.MODE_IN_COMMUNICATION);
         audioManager.setSpeakerphoneOn(!isWiredHeadsetOn);
 
-        MediaConstraints constraints = new MediaConstraints();
-
-        constraints.mandatory.add(new MediaConstraints.KeyValuePair(
-                "OfferToReceiveAudio", "true"));
-        constraints.mandatory.add(new MediaConstraints.KeyValuePair(
-                "OfferToReceiveVideo", "true"));
-
-        constraints.optional.add(new MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"));
-
         Log.d(TAG, "Creating local video source...");
         PeerConnectionFactory factory = PeerConnectionsManager.getFactory();
         Log.v(TAG, "1");
@@ -95,7 +110,7 @@ public class CinePeerClient {
 
         lMS = factory.createLocalMediaStream("ARDAMS");
         Log.v(TAG, "2");
-        VideoCapturer capturer = getVideoCapturer();
+        capturer = getVideoCapturer();
         Log.v(TAG, "3");
         videoSource = factory.createVideoSource(capturer, blankMediaConstraints);
         Log.v(TAG, "4");
