@@ -6,6 +6,8 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.v4.app.NotificationCompat;
@@ -22,6 +24,7 @@ import io.cine.peerclient.R;
  */
 public class GcmIntentService extends IntentService {
     public static final int NOTIFICATION_ID = 1;
+    public static final String META_DATA_NAME = "CinePushNotificationActivity";
     private static String TAG = "GcmIntentService";
     NotificationCompat.Builder builder;
     private NotificationManager mNotificationManager;
@@ -80,8 +83,8 @@ public class GcmIntentService extends IntentService {
 //        Log.v(TAG, "Got action: "+ action);
 //        if(isRunning(this)) {
 //            Log.v(TAG, "IS RUNNING");
-
-        Intent intent = new Intent(this, Object.class);
+        Class activityToStart = getCallingClass();
+        Intent intent = new Intent(this, activityToStart);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         intent.addFlags(Intent.FLAG_FROM_BACKGROUND);
@@ -90,6 +93,26 @@ public class GcmIntentService extends IntentService {
 //        }else{
 //            Log.v(TAG, "NOT RUNNING");
 //        }
+    }
+
+    private Class getCallingClass(){
+
+        ApplicationInfo ai = null;
+        try {
+            ai = getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA);
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
+        Bundle bundle = ai.metaData;
+        String activity = bundle.getString(META_DATA_NAME);
+        Log.v(TAG, "going to spawn: "+activity);
+        try {
+            return Class.forName(activity);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
 
@@ -118,8 +141,10 @@ public class GcmIntentService extends IntentService {
         mNotificationManager = (NotificationManager)
                 this.getSystemService(Context.NOTIFICATION_SERVICE);
 
+        Class activityToStart = getCallingClass();
+
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0,
-                new Intent(this, Object.class), 0);
+                new Intent(this, activityToStart), 0);
 
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(this)

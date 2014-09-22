@@ -28,7 +28,7 @@ public class MainActivity extends Activity implements CinePeerRenderer {
             connectToCine();
             prepareLayout();
             cinePeerClient.startMediaStream();
-            cinePeerClient.joinRoom("hello");
+//            cinePeerClient.joinRoom("hello");
         }
 
         @Override
