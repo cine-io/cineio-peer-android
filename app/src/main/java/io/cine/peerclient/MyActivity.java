@@ -14,7 +14,7 @@ import org.webrtc.VideoRendererGui;
 import io.cine.peerclient.receiver.PlayUnavailableException;
 
 
-public class MyActivity extends Activity implements CinePeerRenderer{
+public class MyActivity extends Activity implements CinePeerRenderer {
     private static final String TAG = "AndroidWebsocketTest";
 
     private CinePeerView vsv;
@@ -68,7 +68,7 @@ public class MyActivity extends Activity implements CinePeerRenderer{
     }
 
     @Override
-    public VideoRenderer.Callbacks getLocalRenderer(){
+    public VideoRenderer.Callbacks getLocalRenderer() {
         return localRender;
     }
 

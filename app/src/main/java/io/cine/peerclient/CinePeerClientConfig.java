@@ -17,17 +17,17 @@ public class CinePeerClientConfig {
     private boolean hasVideo;
     private boolean hasAudio;
 
-    public CinePeerClientConfig(String apiKey, Activity activity){
+    public CinePeerClientConfig(String apiKey, Activity activity) {
         mActivity = activity;
         mApiKey = apiKey;
-        if (mActivity instanceof CinePeerRenderer){
+        if (mActivity instanceof CinePeerRenderer) {
             this.mCinePeerRenderer = (CinePeerRenderer) mActivity;
-        } else{
+        } else {
             throw new RuntimeException("Activity does not implement CinePeerRenderer please use constructor (Activity, CinePeerRenderer)");
         }
     }
 
-    public CinePeerClientConfig(String apiKey, Activity activity, CinePeerRenderer cinePeerRenderer){
+    public CinePeerClientConfig(String apiKey, Activity activity, CinePeerRenderer cinePeerRenderer) {
         mActivity = activity;
         mApiKey = apiKey;
         mCinePeerRenderer = cinePeerRenderer;
@@ -58,7 +58,7 @@ public class CinePeerClientConfig {
         return mApiKey;
     }
 
-    public MediaConstraints getMediaConstraints(){
+    public MediaConstraints getMediaConstraints() {
         MediaConstraints constraints = new MediaConstraints();
 
         constraints.mandatory.add(new MediaConstraints.KeyValuePair(

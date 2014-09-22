@@ -26,7 +26,7 @@ public class SignalingConnection {
     private String identity;
     private boolean mWebsocketOpen;
 
-//    we always push messages to a pendingMessagesToProcess
+    //    we always push messages to a pendingMessagesToProcess
 //    that way we can ensure that we're actually ready to process messages.
 //    we could add hooks in myActivity to tell the signaling connection to wait to process messages
 //    currently we're waiting until we have websocket ready to process any messages.

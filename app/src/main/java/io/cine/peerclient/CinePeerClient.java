@@ -48,11 +48,11 @@ public class CinePeerClient {
     }
 
     private void registerWithCine() throws PlayUnavailableException {
-            GcmRegisterer.registerWithCine(mConfig.getActivity());
+        GcmRegisterer.registerWithCine(mConfig.getActivity());
     }
 
 
-    public void end(){
+    public void end() {
         mSignalingConnection.end();
     }
 
@@ -112,7 +112,7 @@ public class CinePeerClient {
         mPeerConnectionsManager.setMediaStream(lMS);
     }
 
-    public void runOnUiThread(Runnable action){
+    public void runOnUiThread(Runnable action) {
         mConfig.getActivity().runOnUiThread(action);
     }
 
@@ -151,7 +151,7 @@ public class CinePeerClient {
         return mConfig;
     }
 
-    public MediaConstraints getMediaConstraints(){
+    public MediaConstraints getMediaConstraints() {
         return mConfig.getMediaConstraints();
     }
 
