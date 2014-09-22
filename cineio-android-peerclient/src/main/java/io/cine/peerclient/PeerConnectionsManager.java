@@ -152,7 +152,7 @@ public class PeerConnectionsManager {
     public void memberLeft(String otherClientSparkId) {
         RTCMember rtc = rtcMembers.remove(otherClientSparkId);
         if (rtc != null) {
-            rtc.dispose();
+            rtc.close();
         }
     }
 

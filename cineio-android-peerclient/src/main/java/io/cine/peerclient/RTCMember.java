@@ -40,13 +40,14 @@ public class RTCMember {
         this.sdpObserver = sdpObserver;
     }
 
-    public void dispose() {
+    public void close() {
         PeerConnection pc = getPeerConnection();
         PeerObserver observer = getPeerObserver();
         if (observer != null) {
             observer.dispose();
         }
         if (pc != null) {
+            pc.close();
             // causes the app to crash
             // pc.dispose();
         }
