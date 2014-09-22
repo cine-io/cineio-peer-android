@@ -191,4 +191,7 @@ public class CinePeerClient {
         });
 
     }
+    public CinePeerView createView() {
+        return new CinePeerView(mConfig.getActivity());
+    }
 }

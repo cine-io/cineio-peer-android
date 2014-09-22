@@ -4,8 +4,6 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 
 import org.webrtc.VideoRenderer;
 import org.webrtc.VideoRendererGui;
@@ -26,10 +24,10 @@ public class MyActivity extends Activity implements CinePeerRenderer {
         super.onCreate(savedInstanceState);
         connectToCine();
         prepareLayout();
-        startMediaStream();
+        cinePeerClient.startMediaStream();
     }
 
-
+    @Override
     protected void onNewIntent(Intent intent) {
         cinePeerClient.newIntent(intent);
     }
@@ -42,6 +40,8 @@ public class MyActivity extends Activity implements CinePeerRenderer {
 
     private void connectToCine() {
         CinePeerClientConfig config = new CinePeerClientConfig("TEST_API_KEY", this);
+        config.setVideo(true);
+        config.setAudio(true);
         try {
             cinePeerClient = CinePeerClient.init(config);
         } catch (PlayUnavailableException e) {
@@ -51,7 +51,7 @@ public class MyActivity extends Activity implements CinePeerRenderer {
     }
 
     private void prepareLayout() {
-        vsv = new CinePeerView(this);
+        vsv = cinePeerClient.createView();
 
         remoteRender = VideoRendererGui.create(0, 0, 100, 100);
         localRender = VideoRendererGui.create(70, 5, 25, 25);
@@ -68,27 +68,4 @@ public class MyActivity extends Activity implements CinePeerRenderer {
         return remoteRender;
     }
 
-
-    private void startMediaStream() {
-        cinePeerClient.startMediaStream();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.my, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
 }
