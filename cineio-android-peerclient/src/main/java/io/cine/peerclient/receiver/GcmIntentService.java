@@ -15,7 +15,6 @@ import com.google.android.gms.gcm.GoogleCloudMessaging;
 
 import java.util.List;
 
-import io.cine.peerclient.MyActivity;
 import io.cine.peerclient.R;
 
 /**
@@ -82,7 +81,7 @@ public class GcmIntentService extends IntentService {
 //        if(isRunning(this)) {
 //            Log.v(TAG, "IS RUNNING");
 
-        Intent intent = new Intent(this, MyActivity.class);
+        Intent intent = new Intent(this, Object.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         intent.addFlags(Intent.FLAG_FROM_BACKGROUND);
@@ -120,7 +119,7 @@ public class GcmIntentService extends IntentService {
                 this.getSystemService(Context.NOTIFICATION_SERVICE);
 
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0,
-                new Intent(this, MyActivity.class), 0);
+                new Intent(this, Object.class), 0);
 
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(this)

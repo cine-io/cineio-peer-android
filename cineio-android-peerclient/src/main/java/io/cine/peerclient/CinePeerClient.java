@@ -6,6 +6,8 @@ import android.media.AudioManager;
 import android.os.Bundle;
 import android.util.Log;
 
+import org.webrtc.AudioSource;
+import org.webrtc.AudioTrack;
 import org.webrtc.MediaConstraints;
 import org.webrtc.MediaStream;
 import org.webrtc.PeerConnectionFactory;
@@ -13,6 +15,8 @@ import org.webrtc.VideoCapturer;
 import org.webrtc.VideoRenderer;
 import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
+
+import java.util.Iterator;
 
 import io.cine.peerclient.receiver.GcmRegisterer;
 import io.cine.peerclient.receiver.PlayUnavailableException;
@@ -30,6 +34,7 @@ public class CinePeerClient {
     private VideoSource videoSource;
     private boolean factoryStaticInitialized;
     private VideoCapturer capturer;
+    private AudioSource audioSource;
 
     public CinePeerClient(CinePeerClientConfig config) {
         mConfig = config;
@@ -39,6 +44,12 @@ public class CinePeerClient {
         mSignalingConnection.init(config.getApiKey());
         mPeerConnectionsManager.setSignalingConnection(mSignalingConnection);
         mSignalingConnection.setPeerConnectionsManager(mPeerConnectionsManager);
+    }
+
+    public static CinePeerClient init(CinePeerClientConfig config) throws PlayUnavailableException {
+        CinePeerClient c = new CinePeerClient(config);
+        c.registerWithCine();
+        return c;
     }
 
     private void ensureFactoryGlobals() {
@@ -52,27 +63,28 @@ public class CinePeerClient {
 
     }
 
-    public static CinePeerClient init(CinePeerClientConfig config) throws PlayUnavailableException {
-        CinePeerClient c = new CinePeerClient(config);
-        c.registerWithCine();
-        return c;
-    }
-
     private void registerWithCine() throws PlayUnavailableException {
         GcmRegisterer.registerWithCine(mConfig.getActivity());
     }
 
 
     public void end() {
-//        close our connection to signaling.cine.io
+        //        close our connection to signaling.cine.io
         mSignalingConnection.end();
 //        tell the audio manager we are no longer in a call
         getAudioManager().setMode(AudioManager.MODE_NORMAL);
+
 //        dispose of all the local video capture/rendering
 //        NOTE: Order is important here. This order seems to work/not crash.
+        Log.v(TAG, "disposing video capturer");
         capturer.dispose();
-        lMS.dispose();
-        videoSource.dispose();
+        mPeerConnectionsManager.end();
+        Log.v(TAG, "disposing video source");
+//        videoSource.dispose();
+        videoSource.stop();
+//        audioSource.dispose();
+        Log.v(TAG, "disposing lms");
+//        lMS.dispose();
     }
 
     public void newIntent(Intent intent) {
@@ -118,9 +130,9 @@ public class CinePeerClient {
         Log.v(TAG, "6");
         lMS.addTrack(videoTrack);
 //        if (appRtcClient.audioConstraints() != null) {
-        lMS.addTrack(factory.createAudioTrack(
-                "ARDAMSa0",
-                factory.createAudioSource(blankMediaConstraints)));
+        audioSource = factory.createAudioSource(blankMediaConstraints);
+        AudioTrack audioTrack = factory.createAudioTrack("ARDAMSa0",audioSource);
+        lMS.addTrack(audioTrack);
 //        }
         mPeerConnectionsManager.setMediaStream(lMS);
     }
@@ -182,13 +194,26 @@ public class CinePeerClient {
         runOnUiThread(new Runnable() {
             public void run() {
                 Log.d(TAG, "DISPOSING OF STREAM");
+                Iterator<AudioTrack> it = stream.audioTracks.iterator();
+                while (it.hasNext()) {
+                    AudioTrack t = it.next();
+                    stream.removeTrack(t);
+                }
+                Log.d(TAG, "DISPOSING OF STREAM2");
+                Iterator<VideoTrack> it2 = stream.videoTracks.iterator();
+                while (it2.hasNext()) {
+                    VideoTrack t = it2.next();
+                    stream.removeTrack(t);
+                }
+                Log.d(TAG, "DISPOSING OF STREAM3");
                 // causes the app to crash
-                // stream.dispose();
+//                stream.dispose();
                 Log.d(TAG, "DISPOSED OF STREAM");
             }
         });
 
     }
+
     public CinePeerView createView() {
         return new CinePeerView(mConfig.getActivity());
     }

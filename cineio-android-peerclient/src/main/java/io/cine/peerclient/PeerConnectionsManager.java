@@ -160,4 +160,10 @@ public class PeerConnectionsManager {
     public void setSignalingConnection(SignalingConnection signalingConnection) {
         this.signalingConnection = signalingConnection;
     }
+
+    public void end() {
+        for (String sparkId : rtcMembers.keySet()) {
+            memberLeft(sparkId);
+        }
+    }
 }
