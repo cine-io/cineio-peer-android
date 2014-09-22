@@ -12,7 +12,7 @@ import io.cine.peerclient.receiver.PlayUnavailableException;
 
 
 public class MyActivity extends Activity implements CinePeerRenderer {
-    private static final String TAG = "AndroidWebsocketTest";
+    private static final String TAG = "MyActivity";
 
     private CinePeerView vsv;
     private CinePeerClient cinePeerClient;
