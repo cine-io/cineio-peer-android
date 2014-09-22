@@ -39,12 +39,6 @@ public class MyActivity extends Activity implements CinePeerRenderer{
     }
 
 
-    // You need to do the Play Services APK check here too.
-//    @Override
-//    protected void onResume() {
-//        super.onResume();
-//    }
-
     protected void onNewIntent(Intent intent) {
         cinePeerClient.newIntent(intent);
     }

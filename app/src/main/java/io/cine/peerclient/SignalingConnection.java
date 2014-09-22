@@ -12,6 +12,8 @@ import org.webrtc.SessionDescription;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import io.cine.primus.Primus;
+
 /**
  * Created by thomas on 9/15/14.
  */

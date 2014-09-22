@@ -1,4 +1,4 @@
-package io.cine.peerclient;
+package io.cine.primus;
 
 import android.app.Activity;
 import android.os.Handler;
