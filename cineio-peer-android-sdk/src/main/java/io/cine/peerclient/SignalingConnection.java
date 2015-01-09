@@ -204,15 +204,34 @@ public class SignalingConnection {
         mPeerConnectionsManager.newAnswer(otherClientSparkId, response.getJSONObject("answer"));
     }
 
-    private void memberLeft(CineMessage response) {
+    private void userLeft(CineMessage response) {
         String otherClientSparkId = response.getString("sparkId");
+        String room = response.getString("room");
         mPeerConnectionsManager.memberLeft(otherClientSparkId);
+        try {
+            JSONObject j = new JSONObject();
+            j.put("action", "room-goodbye");
+            j.put("room", room);
+            sendToOtherSpark(otherClientSparkId, j);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
     }
 
     //    "{\"action\":\"member\",\"room\":\"hello\",\"sparkId\":\"5fa684d5-708b-4674-b548-b8b12011aa02\"}"
-    private void gotNewMember(CineMessage response) {
+    private void userJoined(CineMessage response) {
         String otherClientSparkId = response.getString("sparkId");
+        String room = response.getString("room");
         mPeerConnectionsManager.newMember(otherClientSparkId);
+        try {
+            JSONObject j = new JSONObject();
+            j.put("action", "room-announce");
+            j.put("room", room);
+            sendToOtherSpark(otherClientSparkId, j);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     private void handleCall(CineMessage response) {
@@ -259,7 +278,7 @@ public class SignalingConnection {
         }
     }
 
-    //TODO: send responses
+    // TODO: send responses
     private void actuallyProcessMessage(CineMessage message) {
         String action = message.getAction();
         Log.v(TAG, "action is: " + action);
@@ -268,7 +287,7 @@ public class SignalingConnection {
             gotAllServers(message);
         } else if (action.equals("room-join")) {
             Log.v(TAG, "GOT new member");
-            gotNewMember(message);
+            userJoined(message);
         } else if (action.equals("rtc-offer")) {
             Log.v(TAG, "GOT new offer");
             gotNewOffer(message);
@@ -280,7 +299,7 @@ public class SignalingConnection {
             gotNewIce(message);
         } else if (action.equals("room-leave")) {
             Log.v(TAG, "GOT new leave");
-            memberLeft(message);
+            userLeft(message);
         } else if (action.equals("call")) {
             Log.v(TAG, "GOT new incoming call");
             handleCall(message);

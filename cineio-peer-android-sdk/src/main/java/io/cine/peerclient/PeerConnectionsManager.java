@@ -47,7 +47,6 @@ public class PeerConnectionsManager {
         servers.add(new PeerConnection.IceServer(url, username, password));
     }
 
-
     public void newMember(String otherClientSparkId) {
         getPeerConnection(otherClientSparkId, true);
     }
