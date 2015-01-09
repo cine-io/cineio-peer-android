@@ -1,1 +1,1 @@
-include ':cineio-android-peerclient', ':ExampleApp'
+include ':cineio-peer-android-sdk', ':CineIOPeerExampleApp'
