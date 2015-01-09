@@ -44,7 +44,7 @@ public class Primus {
             if (!websocketIsOpen()) {
                 currentTimerRun = 0;
                 Log.v(TAG, "Reconnecting to primus");
-                throw new RuntimeException("SOCKET IS CLOSED! FUCKED!");
+                throw new RuntimeException("SOCKET IS CLOSED! NOT RECONNECTING!");
 //                reconnect();
             }
             if (currentTimerRun >= 10) {
@@ -95,6 +95,7 @@ public class Primus {
     }
 
     private void createNewWebsocket() {
+        Log.v(TAG, "connecting to: "+ url);
         AsyncHttpClient.getDefaultInstance().websocket(url, getProtocolFromUrl(), new AsyncHttpClient.WebSocketConnectCallback() {
 
             @Override

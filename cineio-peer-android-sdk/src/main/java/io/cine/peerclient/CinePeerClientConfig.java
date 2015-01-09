@@ -12,14 +12,14 @@ public class CinePeerClientConfig {
     private static final String TAG = "CinePeerClientConfig";
 
     private final Activity mActivity;
-    private final String mApiKey;
+    private final String mPublicKey;
     private final CinePeerRenderer mCinePeerRenderer;
     private boolean hasVideo;
     private boolean hasAudio;
 
-    public CinePeerClientConfig(String apiKey, Activity activity) {
+    public CinePeerClientConfig(String publicKey, Activity activity) {
         mActivity = activity;
-        mApiKey = apiKey;
+        mPublicKey = publicKey;
         if (mActivity instanceof CinePeerRenderer) {
             this.mCinePeerRenderer = (CinePeerRenderer) mActivity;
         } else {
@@ -27,14 +27,8 @@ public class CinePeerClientConfig {
         }
     }
 
-    public CinePeerClientConfig(String apiKey, Activity activity, CinePeerRenderer cinePeerRenderer) {
-        mActivity = activity;
-        mApiKey = apiKey;
-        mCinePeerRenderer = cinePeerRenderer;
-    }
 
-
-    public boolean getVideo() {
+    public boolean hasVideo() {
         return hasVideo;
     }
 
@@ -42,7 +36,7 @@ public class CinePeerClientConfig {
         this.hasVideo = hasVideo;
     }
 
-    public boolean getAudio() {
+    public boolean hasAudio() {
         return hasAudio;
     }
 
@@ -55,7 +49,7 @@ public class CinePeerClientConfig {
     }
 
     public String getApiKey() {
-        return mApiKey;
+        return mPublicKey;
     }
 
     public MediaConstraints getMediaConstraints() {

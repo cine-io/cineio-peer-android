@@ -11,6 +11,7 @@ import org.webrtc.SessionDescription;
 
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.UUID;
 
 import io.cine.primus.Primus;
 
@@ -20,9 +21,10 @@ import io.cine.primus.Primus;
 public class SignalingConnection {
     private static final String TAG = "SignalingConnection";
     private final Activity activity;
-    private final String baseUrl = "http://192.168.1.114:8888/primus";
+    private final String baseUrl = "http://192.168.1.139:8443/primus";
     private final Primus primus;
-    private String apiKey;
+    private final String uuid;
+    private String publicKey;
     private String identity;
     private boolean mWebsocketOpen;
 
@@ -36,6 +38,7 @@ public class SignalingConnection {
     private SignalingConnection(Activity activity) {
         this.activity = activity;
         this.mWebsocketOpen = false;
+        this.uuid = UUID.randomUUID().toString();
         primus = Primus.connect(activity, baseUrl);
         pendingMessagesToProcess = new LinkedList<CineMessage>();
 
@@ -44,6 +47,9 @@ public class SignalingConnection {
             @Override
             public void onOpen() {
                 mWebsocketOpen = true;
+                auth();
+                // TODO: reidentify (when reconnecting works)
+                // TODO: rejoin rooms (when reconnecting works)
                 processPendingMessages();
             }
         });
@@ -59,12 +65,22 @@ public class SignalingConnection {
 
     }
 
+    private void auth() {
+        try {
+            JSONObject j = new JSONObject();
+            j.put("action", "auth");
+            send(j);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static SignalingConnection connect(Activity activity) {
         return new SignalingConnection(activity);
     }
 
     public void init(String apiKey) {
-        this.apiKey = apiKey;
+        this.publicKey = apiKey;
     }
 
     public void setDataCallback(Primus.PrimusDataCallback callback) {
@@ -74,7 +90,6 @@ public class SignalingConnection {
     public void setOpenCallback(Primus.PrimusOpenCallback callback) {
         primus.setOpenCallback(callback);
     }
-
 
     public void identify(String identity) {
         try {
@@ -93,7 +108,7 @@ public class SignalingConnection {
     public void joinRoom(String room) {
         try {
             JSONObject j = new JSONObject();
-            j.put("action", "join");
+            j.put("action", "room-join");
             j.put("room", room);
             Log.v(TAG, "joining room: " + room);
             send(j);
@@ -106,7 +121,7 @@ public class SignalingConnection {
         try {
             JSONObject j = new JSONObject();
             j.put("action", "call");
-            j.put("identity", this.identity);
+//            j.put("identity", this.identity);
             j.put("otheridentity", otherIdentity);
             Log.v(TAG, "calling: " + identity);
             send(j);
@@ -121,8 +136,10 @@ public class SignalingConnection {
 
     private void send(JSONObject j) {
         try {
-            j.put("source", "android");
-            j.put("apikey", this.apiKey);
+            j.put("client", "cineio-peer-android version-"+ CinePeerClient.VERSION);
+            j.put("publicKey", this.publicKey);
+            j.put("uuid", this.uuid);
+            // TODO: send identity
             primus.send(j);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -146,7 +163,7 @@ public class SignalingConnection {
             sdpJSON.put("sdp", localSdp.description);
             JSONObject json = new JSONObject();
             json.put(type, sdpJSON);
-            json.put("action", type);
+            json.put("action", "rtc-"+type); //rtc-offer, rtc-answer
             sendToOtherSpark(mOtherClientSparkId, json);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -160,7 +177,7 @@ public class SignalingConnection {
             candidateObject.put("sdpMid", candidate.sdpMid);
             candidateObject.put("sdpMLineIndex", candidate.sdpMLineIndex);
             JSONObject j = new JSONObject();
-            j.put("action", "ice");
+            j.put("action", "rtc-ice");
             JSONObject candidateMiddleMan = new JSONObject();
             candidateMiddleMan.put("candidate", candidateObject);
             j.put("candidate", candidateMiddleMan);
@@ -242,28 +259,29 @@ public class SignalingConnection {
         }
     }
 
+    //TODO: send responses
     private void actuallyProcessMessage(CineMessage message) {
         String action = message.getAction();
         Log.v(TAG, "action is: " + action);
-        if (action.equals("allservers")) {
+        if (action.equals("rtc-servers")) {
             Log.v(TAG, "GOT ALL SERVERS");
             gotAllServers(message);
-        } else if (action.equals("member")) {
+        } else if (action.equals("room-join")) {
             Log.v(TAG, "GOT new member");
             gotNewMember(message);
-        } else if (action.equals("offer")) {
+        } else if (action.equals("rtc-offer")) {
             Log.v(TAG, "GOT new offer");
             gotNewOffer(message);
-        } else if (action.equals("answer")) {
+        } else if (action.equals("rtc-answer")) {
             Log.v(TAG, "GOT new answer");
             gotNewAnswer(message);
-        } else if (action.equals("ice")) {
+        } else if (action.equals("rtc-ice")) {
             Log.v(TAG, "GOT new ice");
             gotNewIce(message);
-        } else if (action.equals("leave")) {
+        } else if (action.equals("room-leave")) {
             Log.v(TAG, "GOT new leave");
             memberLeft(message);
-        } else if (action.equals("incomingcall")) {
+        } else if (action.equals("call")) {
             Log.v(TAG, "GOT new incoming call");
             handleCall(message);
         } else {
