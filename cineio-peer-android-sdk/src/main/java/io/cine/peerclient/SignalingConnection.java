@@ -190,24 +190,27 @@ public class SignalingConnection {
 
     private void gotNewIce(CineMessage response) {
         String otherClientSparkId = response.getString("sparkId");
-
-        mPeerConnectionsManager.newIce(otherClientSparkId, response.getJSONObject("candidate"));
+        String otherClientSparkUUID = response.getString("sparkUUID");
+        mPeerConnectionsManager.newIce(otherClientSparkUUID, otherClientSparkId, response.getJSONObject("candidate"));
     }
 
     private void gotNewOffer(CineMessage response) {
         String otherClientSparkId = response.getString("sparkId");
-        mPeerConnectionsManager.newOffer(otherClientSparkId, response.getJSONObject("offer"));
+        String otherClientSparkUUID = response.getString("sparkUUID");
+        mPeerConnectionsManager.newOffer(otherClientSparkUUID, otherClientSparkId, response.getJSONObject("offer"));
     }
 
     private void gotNewAnswer(CineMessage response) {
         String otherClientSparkId = response.getString("sparkId");
-        mPeerConnectionsManager.newAnswer(otherClientSparkId, response.getJSONObject("answer"));
+        String otherClientSparkUUID = response.getString("sparkUUID");
+        mPeerConnectionsManager.newAnswer(otherClientSparkUUID, otherClientSparkId, response.getJSONObject("answer"));
     }
 
     private void userLeft(CineMessage response) {
         String otherClientSparkId = response.getString("sparkId");
+        String otherClientSparkUUID = response.getString("sparkUUID");
         String room = response.getString("room");
-        mPeerConnectionsManager.memberLeft(otherClientSparkId);
+        mPeerConnectionsManager.closeConnection(otherClientSparkUUID);
         try {
             JSONObject j = new JSONObject();
             j.put("action", "room-goodbye");
@@ -222,9 +225,10 @@ public class SignalingConnection {
     //    "{\"action\":\"member\",\"room\":\"hello\",\"sparkId\":\"5fa684d5-708b-4674-b548-b8b12011aa02\"}"
     private void userJoined(CineMessage response) {
         String otherClientSparkId = response.getString("sparkId");
-        String room = response.getString("room");
-        mPeerConnectionsManager.newMember(otherClientSparkId);
+        String otherClientSparkUUID = response.getString("sparkUUID");
+        mPeerConnectionsManager.ensurePeerConnection(otherClientSparkUUID, otherClientSparkId, true);
         try {
+            String room = response.getString("room");
             JSONObject j = new JSONObject();
             j.put("action", "room-announce");
             j.put("room", room);
@@ -282,7 +286,10 @@ public class SignalingConnection {
     private void actuallyProcessMessage(CineMessage message) {
         String action = message.getAction();
         Log.v(TAG, "action is: " + action);
-        if (action.equals("rtc-servers")) {
+        if (action.equals("ack")) {
+            Log.v(TAG, "GOT ACK");
+            // do nothing
+        } else if (action.equals("rtc-servers")) {
             Log.v(TAG, "GOT ALL SERVERS");
             gotAllServers(message);
         } else if (action.equals("room-join")) {
@@ -300,12 +307,29 @@ public class SignalingConnection {
         } else if (action.equals("room-leave")) {
             Log.v(TAG, "GOT new leave");
             userLeft(message);
+        } else if (action.equals("room-announce")) {
+            Log.v(TAG, "GOT room announce");
+            roomAnnounce(message);
+        } else if (action.equals("room-goodbye")) {
+            Log.v(TAG, "GOT room goodbye");
+            roomGoodbye(message);
         } else if (action.equals("call")) {
             Log.v(TAG, "GOT new incoming call");
             handleCall(message);
         } else {
             Log.v(TAG, "Unknown action");
         }
+    }
+
+    private void roomGoodbye(CineMessage message) {
+        String otherClientSparkUUID = message.getString("sparkUUID");
+        mPeerConnectionsManager.closeConnection(otherClientSparkUUID);
+    }
+
+    private void roomAnnounce(CineMessage message) {
+        String otherClientSparkId = message.getString("sparkId");
+        String otherClientSparkUUID = message.getString("sparkUUID");
+        mPeerConnectionsManager.ensurePeerConnection(otherClientSparkUUID, otherClientSparkId, false);
     }
 
 

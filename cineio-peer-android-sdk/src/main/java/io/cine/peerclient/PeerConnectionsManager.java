@@ -47,14 +47,15 @@ public class PeerConnectionsManager {
         servers.add(new PeerConnection.IceServer(url, username, password));
     }
 
-    public void newMember(String otherClientSparkId) {
-        getPeerConnection(otherClientSparkId, true);
+    public void ensurePeerConnection(String otherClientUUID, String otherClientSparkId, boolean isInitiator) {
+        getPeerConnection(otherClientUUID, otherClientSparkId, isInitiator);
     }
 
     //    TODO: ensure iceServers are added
-    private PeerConnection createPeerConnection(String otherClientSparkId, boolean isInitiator) {
-        Log.d(TAG, "creating new peer connection for: " + otherClientSparkId);
-        RTCMember rtc = new RTCMember(otherClientSparkId);
+    private PeerConnection createPeerConnection(String otherClientSparkUUID, String otherClientSparkId, boolean isInitiator) {
+        Log.d(TAG, "creating new peer connection for: " + otherClientSparkUUID);
+        RTCMember rtc = new RTCMember(otherClientSparkUUID);
+        rtc.setClientSparkId(otherClientSparkId);
         PeerObserver observer = new PeerObserver(rtc, mCinePeerClient);
         rtc.setPeerObserver(observer);
 
@@ -75,13 +76,13 @@ public class PeerConnectionsManager {
             Log.d(TAG, "creating offer");
             peerConnection.createOffer(sdpObserver, mCinePeerClient.getMediaConstraints());
         }
-        rtcMembers.put(otherClientSparkId, rtc);
+        rtcMembers.put(otherClientSparkUUID, rtc);
         return peerConnection;
     }
 
-    public void newIce(String otherClientSparkId, JSONObject candidateObj) {
+    public void newIce(String otherClientSparkUUID, String otherClientSparkId, JSONObject candidateObj) {
         try {
-            PeerConnection pc = getPeerConnection(otherClientSparkId, false);
+            PeerConnection pc = getPeerConnection(otherClientSparkUUID, otherClientSparkId, false);
             JSONObject j = candidateObj.getJSONObject("candidate");
             int sdpMLineIndex = j.getInt("sdpMLineIndex");
             String sdpMid = j.getString("sdpMid");
@@ -97,24 +98,26 @@ public class PeerConnectionsManager {
 
     }
 
-    private PeerConnection getPeerConnection(String otherClientSparkId, boolean isInitiator) {
-        RTCMember rtc = rtcMembers.get(otherClientSparkId);
+    private PeerConnection getPeerConnection(String otherClientSparkUUID, String otherClientSparkId, boolean isInitiator) {
+        RTCMember rtc = rtcMembers.get(otherClientSparkUUID);
+
         if (rtc != null) {
+            rtc.setClientSparkId(otherClientSparkId);
             return rtc.getPeerConnection();
         } else {
-            return createPeerConnection(otherClientSparkId, isInitiator);
+            return createPeerConnection(otherClientSparkUUID, otherClientSparkId, isInitiator);
         }
     }
 
-    public void newOffer(String otherClientSparkId, JSONObject offerObj) {
-        PeerConnection pc = getPeerConnection(otherClientSparkId, false);
+    public void newOffer(String otherClientSparkUUID, String otherClientSparkId, JSONObject offerObj) {
+        PeerConnection pc = getPeerConnection(otherClientSparkUUID, otherClientSparkId, false);
         try {
             String type = offerObj.getString("type");
             String sdpDescription = offerObj.getString("sdp");
             SessionDescription sd = new SessionDescription(
                     SessionDescription.Type.fromCanonicalForm(type),
                     RTCHelper.preferISAC(sdpDescription));
-            SDPObserver sdpObserver = getSDPObserverFromSparkId(otherClientSparkId);
+            SDPObserver sdpObserver = getSDPObserverFromSparkUUID(otherClientSparkUUID);
             pc.setRemoteDescription(sdpObserver, sd);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -122,8 +125,8 @@ public class PeerConnectionsManager {
 
     }
 
-    public SDPObserver getSDPObserverFromSparkId(String otherClientSparkId) {
-        return rtcMembers.get(otherClientSparkId).getSdpObserver();
+    public SDPObserver getSDPObserverFromSparkUUID(String otherClientSparkUUID) {
+        return rtcMembers.get(otherClientSparkUUID).getSdpObserver();
     }
 
     public void setMediaStream(MediaStream mediaStream) {
@@ -132,15 +135,15 @@ public class PeerConnectionsManager {
 
     // notice how close this is to newOffer
     // an offer is the remote description as is an answer
-    public void newAnswer(String otherClientSparkId, JSONObject answerObj) {
-        PeerConnection pc = getPeerConnection(otherClientSparkId, false);
+    public void newAnswer(String otherClientSparkUUID, String otherClientSparkId, JSONObject answerObj) {
+        PeerConnection pc = getPeerConnection(otherClientSparkUUID, otherClientSparkId, false);
         try {
             String type = answerObj.getString("type");
             String sdpDescription = answerObj.getString("sdp");
             SessionDescription sd = new SessionDescription(
                     SessionDescription.Type.fromCanonicalForm(type),
                     RTCHelper.preferISAC(sdpDescription));
-            SDPObserver sdpObserver = getSDPObserverFromSparkId(otherClientSparkId);
+            SDPObserver sdpObserver = getSDPObserverFromSparkUUID(otherClientSparkUUID);
             pc.setRemoteDescription(sdpObserver, sd);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -148,16 +151,16 @@ public class PeerConnectionsManager {
 
     }
 
-    public void memberLeft(String otherClientSparkId) {
-        RTCMember rtc = rtcMembers.remove(otherClientSparkId);
+    public void closeConnection(String otherClientSparkUUID) {
+        RTCMember rtc = rtcMembers.remove(otherClientSparkUUID);
         if (rtc != null) {
             rtc.close();
         }
     }
 
     public void end() {
-        for (String sparkId : rtcMembers.keySet()) {
-            memberLeft(sparkId);
+        for (String sparkUUID : rtcMembers.keySet()) {
+            closeConnection(sparkUUID);
         }
     }
 }

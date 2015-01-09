@@ -7,13 +7,14 @@ import org.webrtc.PeerConnection;
  */
 public class RTCMember {
 
-    private final String sparkId;
+    private String sparkUUID;
+    private String sparkId;
     private PeerConnection peerConnection;
     private PeerObserver peerObserver;
     private SDPObserver sdpObserver;
 
-    public RTCMember(String sparkId) {
-        this.sparkId = sparkId;
+    public RTCMember(String sparkUUID) {
+        this.sparkUUID = sparkUUID;
     }
 
     public PeerConnection getPeerConnection() {
@@ -55,5 +56,9 @@ public class RTCMember {
 
     public String getSparkId() {
         return sparkId;
+    }
+
+    public void setClientSparkId(String clientSparkId) {
+        this.sparkId = clientSparkId;
     }
 }

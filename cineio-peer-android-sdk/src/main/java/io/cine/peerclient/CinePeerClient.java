@@ -195,13 +195,17 @@ public class CinePeerClient {
         runOnUiThread(new Runnable() {
             public void run() {
 //                I don't actually know if this song and dance is valuable
-                Log.d(TAG, "DISPOSING OF STREAM");
+                if (stream == null){
+                    Log.d(TAG, "STREAM IS NULL");
+                    return;
+                }
+                Log.d(TAG, "DISPOSING OF AUDIO");
                 Iterator<AudioTrack> it = stream.audioTracks.iterator();
                 while (it.hasNext()) {
                     AudioTrack t = it.next();
                     stream.removeTrack(t);
                 }
-                Log.d(TAG, "DISPOSING OF STREAM2");
+                Log.d(TAG, "DISPOSING OF VIDEO");
                 Iterator<VideoTrack> it2 = stream.videoTracks.iterator();
                 while (it2.hasNext()) {
                     VideoTrack t = it2.next();
