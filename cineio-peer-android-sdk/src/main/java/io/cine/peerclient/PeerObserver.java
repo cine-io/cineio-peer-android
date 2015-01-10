@@ -34,7 +34,7 @@ class PeerObserver implements PeerConnection.Observer {
         addedStream = stream;
         RTCHelper.abortUnless(stream.audioTracks.size() <= 1 && stream.videoTracks.size() <= 1, "Weird-looking stream: " + stream);
         if (stream.videoTracks.size() == 1) {
-            mCinePeerClient.addStream(stream);
+            mCinePeerClient.addRemoteStream(stream);
         }
     }
 
@@ -79,6 +79,6 @@ class PeerObserver implements PeerConnection.Observer {
 
     private void disposeOfStream(final MediaStream stream) {
         Log.d(TAG, "removing stream");
-        mCinePeerClient.removeStream(stream);
+        mCinePeerClient.removeRemoteStream(stream);
     }
 }

@@ -31,10 +31,9 @@ import android.app.Activity;
 import android.graphics.Point;
 import android.opengl.GLSurfaceView;
 
-import org.webrtc.VideoRendererGui;
-
 public class CinePeerView extends GLSurfaceView {
     private Point screenDimensions;
+
 
     public CinePeerView(Activity c) {
         super(c.getApplicationContext());
@@ -42,7 +41,7 @@ public class CinePeerView extends GLSurfaceView {
         c.getWindowManager().getDefaultDisplay().getRealSize(displaySize);
 
         this.screenDimensions = displaySize;
-        VideoRendererGui.setView(this);
+        VideoRendererBackend.setView(this);
     }
 
     public void updateDisplaySize(Point screenDimensions) {

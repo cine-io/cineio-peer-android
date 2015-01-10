@@ -12,11 +12,8 @@ import org.webrtc.MediaConstraints;
 import org.webrtc.MediaStream;
 import org.webrtc.PeerConnectionFactory;
 import org.webrtc.VideoCapturer;
-import org.webrtc.VideoRenderer;
 import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
-
-import java.util.Iterator;
 
 import io.cine.peerclient.receiver.GcmRegisterer;
 import io.cine.peerclient.receiver.PlayUnavailableException;
@@ -32,11 +29,9 @@ public class CinePeerClient {
     private static CinePeerClientConfig mConfig;
     private final PeerConnectionsManager mPeerConnectionsManager;
     private final SignalingConnection mSignalingConnection;
-    private MediaStream lMS;
-    private VideoSource videoSource;
+    private MediaStream localStream;
     private boolean factoryStaticInitialized;
     private VideoCapturer capturer;
-    private AudioSource audioSource;
 
     public CinePeerClient(CinePeerClientConfig config) {
         mConfig = config;
@@ -81,11 +76,7 @@ public class CinePeerClient {
         capturer.dispose();
         mPeerConnectionsManager.end();
         Log.v(TAG, "disposing video source");
-//        videoSource.dispose();
-        videoSource.stop();
-//        audioSource.dispose();
-        Log.v(TAG, "disposing lms");
-//        lMS.dispose();
+        stopCameraAndMicrophone();
     }
 
     public void newIntent(Intent intent) {
@@ -103,7 +94,7 @@ public class CinePeerClient {
         return (AudioManager) mConfig.getActivity().getSystemService(Context.AUDIO_SERVICE);
     }
 
-    public void startMediaStream() {
+    public void startCameraAndMicrophone() {
 
         AudioManager audioManager = getAudioManager();
         // TODO(fischman): figure out how to do this Right(tm) and remove the
@@ -119,23 +110,33 @@ public class CinePeerClient {
         Log.v(TAG, "1");
         MediaConstraints blankMediaConstraints = new MediaConstraints();
 
-        lMS = factory.createLocalMediaStream("ARDAMS");
+        localStream = factory.createLocalMediaStream("ARDAMS");
         Log.v(TAG, "2");
         capturer = getVideoCapturer();
         Log.v(TAG, "3");
-        videoSource = factory.createVideoSource(capturer, blankMediaConstraints);
+        VideoSource videoSource = factory.createVideoSource(capturer, blankMediaConstraints);
         Log.v(TAG, "4");
         VideoTrack videoTrack = factory.createVideoTrack("ARDAMSv0", videoSource);
+        localStream.addTrack(videoTrack);
         Log.v(TAG, "5");
-        videoTrack.addRenderer(new VideoRenderer(mConfig.getCinePeerRenderer().getLocalRenderer()));
-        Log.v(TAG, "6");
-        lMS.addTrack(videoTrack);
-//        if (appRtcClient.audioConstraints() != null) {
-        audioSource = factory.createAudioSource(blankMediaConstraints);
-        AudioTrack audioTrack = factory.createAudioTrack("ARDAMSa0",audioSource);
-        lMS.addTrack(audioTrack);
-//        }
-        mPeerConnectionsManager.setMediaStream(lMS);
+        localStream.addTrack(videoTrack);
+        AudioSource audioSource = factory.createAudioSource(blankMediaConstraints);
+        AudioTrack audioTrack = factory.createAudioTrack("ARDAMSa0", audioSource);
+        localStream.addTrack(audioTrack);
+
+        mPeerConnectionsManager.setLocalMediaStream(localStream);
+        mConfig.getCinePeerRenderer().mediaAdded(localStream, true);
+
+    }
+
+    public void stopCameraAndMicrophone(){
+        runOnUiThread(new Runnable() {
+            public void run() {
+                disposeOfStream(localStream);
+                mConfig.getCinePeerRenderer().mediaRemoved(localStream, true);
+                localStream = null;
+            }
+        });
     }
 
     public void runOnUiThread(Runnable action) {
@@ -181,43 +182,47 @@ public class CinePeerClient {
         return mConfig.getMediaConstraints();
     }
 
-    public void addStream(final MediaStream stream) {
+    public void addRemoteStream(final MediaStream stream) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                stream.videoTracks.get(0).addRenderer(
-                        new VideoRenderer(mConfig.getCinePeerRenderer().getRemoteRenderer()));
+                mConfig.getCinePeerRenderer().mediaAdded(stream, false);
             }
         });
     }
 
-    public void removeStream(final MediaStream stream) {
+    private void disposeOfStream(MediaStream stream){
+        //                I don't actually know if this song and dance is valuable
+        if (stream == null){
+            Log.d(TAG, "STREAM IS NULL");
+        } else {
+            Log.d(TAG, "NOT DISPOSING OF STREAM");
+            return;
+//            Log.d(TAG, "DISPOSING OF AUDIO");
+//            Iterator<AudioTrack> it = stream.audioTracks.iterator();
+//            while (it.hasNext()) {
+//                AudioTrack t = it.next();
+//                t.dispose();
+//            }
+//            Log.d(TAG, "DISPOSING OF VIDEO");
+//            Iterator<VideoTrack> it2 = stream.videoTracks.iterator();
+//            while (it2.hasNext()) {
+//                VideoTrack t = it2.next();
+//                t.dispose();
+//            }
+//            // causes the app to crash
+//            stream.dispose();
+//            Log.d(TAG, "DISPOSED OF STREAM");
+        }
+    }
+
+    public void removeRemoteStream(final MediaStream stream) {
         runOnUiThread(new Runnable() {
             public void run() {
-//                I don't actually know if this song and dance is valuable
-                if (stream == null){
-                    Log.d(TAG, "STREAM IS NULL");
-                    return;
-                }
-                Log.d(TAG, "DISPOSING OF AUDIO");
-                Iterator<AudioTrack> it = stream.audioTracks.iterator();
-                while (it.hasNext()) {
-                    AudioTrack t = it.next();
-                    stream.removeTrack(t);
-                }
-                Log.d(TAG, "DISPOSING OF VIDEO");
-                Iterator<VideoTrack> it2 = stream.videoTracks.iterator();
-                while (it2.hasNext()) {
-                    VideoTrack t = it2.next();
-                    stream.removeTrack(t);
-                }
-                Log.d(TAG, "DISPOSING OF STREAM3");
-                // causes the app to crash
-//                stream.dispose();
-                Log.d(TAG, "DISPOSED OF STREAM");
+                disposeOfStream(stream);
+                mConfig.getCinePeerRenderer().mediaRemoved(stream, false);
             }
         });
-
     }
 
     public CinePeerView createView() {

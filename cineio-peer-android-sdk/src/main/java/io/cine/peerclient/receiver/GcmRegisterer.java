@@ -40,7 +40,6 @@ public class GcmRegisterer {
     public static void registerWithCine(Activity mActivity) throws PlayUnavailableException {
         GcmRegisterer g = new GcmRegisterer(mActivity);
         g.ensureRegisteredWithCine();
-
     }
 
     /**

@@ -22,7 +22,7 @@ public class PeerConnectionsManager {
     private static PeerConnectionFactory factory;
     private final CinePeerClient mCinePeerClient;
     private final HashMap<String, RTCMember> rtcMembers;
-    private MediaStream mediaStream;
+    private MediaStream localMediaStream;
     private ArrayList<PeerConnection.IceServer> servers;
 
     public PeerConnectionsManager(CinePeerClient cinePeerClient) {
@@ -65,7 +65,7 @@ public class PeerConnectionsManager {
         rtc.setPeerConnection(peerConnection);
         Log.d(TAG, "created new peerConnection");
 //        this is supposed to be a blank media constraints
-        peerConnection.addStream(mediaStream, new MediaConstraints());
+        peerConnection.addStream(localMediaStream, new MediaConstraints());
         Log.d(TAG, "added stream");
 
         SDPObserver sdpObserver = new SDPObserver(rtc, mCinePeerClient, isInitiator);
@@ -129,8 +129,8 @@ public class PeerConnectionsManager {
         return rtcMembers.get(otherClientSparkUUID).getSdpObserver();
     }
 
-    public void setMediaStream(MediaStream mediaStream) {
-        this.mediaStream = mediaStream;
+    public void setLocalMediaStream(MediaStream localMediaStream) {
+        this.localMediaStream = localMediaStream;
     }
 
     // notice how close this is to newOffer
