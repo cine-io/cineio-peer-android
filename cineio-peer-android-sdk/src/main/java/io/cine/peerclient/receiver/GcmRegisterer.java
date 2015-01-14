@@ -65,8 +65,8 @@ public class GcmRegisterer {
 
         if (regid.isEmpty()) {
             registerInBackground();
-        }else {
-            Log.v(TAG, "REG STORED AND IS: "+ regid);
+        } else {
+            Log.v(TAG, "REG STORED AND IS: " + regid);
         }
 
     }

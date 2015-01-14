@@ -136,7 +136,7 @@ public class SignalingConnection {
 
     private void send(JSONObject j) {
         try {
-            j.put("client", "cineio-peer-android version-"+ CinePeerClient.VERSION);
+            j.put("client", "cineio-peer-android version-" + CinePeerClient.VERSION);
             j.put("publicKey", this.publicKey);
             j.put("uuid", this.uuid);
             // TODO: send identity
@@ -163,7 +163,7 @@ public class SignalingConnection {
             sdpJSON.put("sdp", localSdp.description);
             JSONObject json = new JSONObject();
             json.put(type, sdpJSON);
-            json.put("action", "rtc-"+type); //rtc-offer, rtc-answer
+            json.put("action", "rtc-" + type); //rtc-offer, rtc-answer
             sendToOtherSpark(mOtherClientSparkId, json);
         } catch (JSONException e) {
             e.printStackTrace();

@@ -95,7 +95,7 @@ public class GcmIntentService extends IntentService {
 //        }
     }
 
-    private Class getCallingClass(){
+    private Class getCallingClass() {
 
         ApplicationInfo ai = null;
         try {
@@ -106,7 +106,7 @@ public class GcmIntentService extends IntentService {
         }
         Bundle bundle = ai.metaData;
         String activity = bundle.getString(META_DATA_NAME);
-        Log.v(TAG, "going to spawn: "+activity);
+        Log.v(TAG, "going to spawn: " + activity);
         try {
             return Class.forName(activity);
         } catch (ClassNotFoundException e) {
