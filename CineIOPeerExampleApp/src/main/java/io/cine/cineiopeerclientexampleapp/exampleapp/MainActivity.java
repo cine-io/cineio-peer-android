@@ -6,12 +6,14 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.LinearLayout;
 
+import org.json.JSONObject;
 import org.webrtc.MediaStream;
 import org.webrtc.VideoRenderer;
 import org.webrtc.VideoRendererGui;
 
 import java.util.ArrayList;
 
+import io.cine.peerclient.Call;
 import io.cine.peerclient.CinePeerClient;
 import io.cine.peerclient.CinePeerClientConfig;
 import io.cine.peerclient.CinePeerRenderer;
@@ -71,29 +73,24 @@ public class MainActivity extends Activity implements CinePeerRenderer {
         int height = 25;
         int x = count * 25;
         int y = 5;
-            return VideoRendererGui.create(x,y, width, height);
+        return VideoRendererGui.create(x,y, width, height);
     }
 
     private void recalculateLayout() {
-        Log.v(TAG, "recalculating layout");
         for (MediaStreamAndRenderer msr : this.mediaStreamAndRenderers) {
             clearMediaStream(msr);
         }
-        Log.v(TAG, "resetting");
+
         resetView();
-        Log.v(TAG, "reset");
+
         for(int i = 0; i < this.mediaStreamAndRenderers.size(); i++){
             MediaStreamAndRenderer msr = this.mediaStreamAndRenderers.get(i);
             showMediaStream(msr, i);
         }
-        Log.v(TAG, "shown");
     }
 
     private void resetView() {
         LinearLayout l = (LinearLayout) findViewById(R.id.theLinearLayout);
-        if (l == null){
-            Log.v(TAG, "LAYOUT IS NULL");
-        }
         if (vsv != null) {
             l.removeView(vsv);
         }
@@ -124,23 +121,18 @@ public class MainActivity extends Activity implements CinePeerRenderer {
                 toDelete = msr;
             }
         }
-        Log.v(TAG, "REMOVING VIDEO RENDERER FROM STREAM");
-
-//        toDelete.removeVideoRenderer();
 
         mediaStreamAndRenderers.remove(toDelete);
-        Log.v(TAG, "REMOVED VIDEO RENDERER FROM STREAM");
-
         recalculateLayout();
     }
 
     @Override
-    public void peerData() {
+    public void peerData(JSONObject object) {
 
     }
 
     @Override
-    public void onCall() {
+    public void onCall(Call call) {
 
     }
 }

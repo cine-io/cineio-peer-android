@@ -1,5 +1,6 @@
 package io.cine.peerclient;
 
+import org.json.JSONObject;
 import org.webrtc.MediaStream;
 
 /**
@@ -11,8 +12,8 @@ public interface CinePeerRenderer {
 
     public void mediaRemoved(MediaStream stream, boolean local);
 
-    public void peerData();
+    public void peerData(JSONObject object);
 
-    public void onCall();
+    public void onCall(Call call);
 
 }

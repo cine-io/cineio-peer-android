@@ -117,13 +117,60 @@ public class SignalingConnection {
         }
     }
 
+    public void leaveRoom(String room) {
+        try {
+            JSONObject j = new JSONObject();
+            j.put("action", "room-leave");
+            j.put("room", room);
+            Log.v(TAG, "joining room: " + room);
+            send(j);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void call(String otherIdentity) {
         try {
             JSONObject j = new JSONObject();
             j.put("action", "call");
-//            j.put("identity", this.identity);
             j.put("otheridentity", otherIdentity);
             Log.v(TAG, "calling: " + identity);
+            send(j);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void call(String otherIdentity, String room) {
+        try {
+            JSONObject j = new JSONObject();
+            j.put("action", "call");
+            j.put("room", "room");
+            j.put("otheridentity", otherIdentity);
+            Log.v(TAG, "calling: " + identity);
+            send(j);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void callCancel(String otherIdentity, String room) {
+        try {
+            JSONObject j = new JSONObject();
+            j.put("action", "call-cancel");
+            j.put("room", "room");
+            j.put("otheridentity", otherIdentity);
+            send(j);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void rejectCall(String room) {
+        try {
+            JSONObject j = new JSONObject();
+            j.put("action", "reject-call");
+            j.put("room", "room");
             send(j);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -239,7 +286,7 @@ public class SignalingConnection {
     }
 
     private void handleCall(CineMessage response) {
-        joinRoom(response.getString("room"));
+        //TODO: HANDLE CALL response.getString("room")
     }
 
 
@@ -286,24 +333,32 @@ public class SignalingConnection {
     private void actuallyProcessMessage(CineMessage message) {
         String action = message.getAction();
         Log.v(TAG, "action is: " + action);
+        //BASE
         if (action.equals("ack")) {
             Log.v(TAG, "GOT ACK");
             // do nothing
+        } else if (action.equals("error")) {
+            Log.v(TAG, "GOT ERRORS");
+            //TODO: HANDLE ERROR
         } else if (action.equals("rtc-servers")) {
             Log.v(TAG, "GOT ALL SERVERS");
             gotAllServers(message);
+        //END BASE
+        //CALLING
+        } else if (action.equals("call")) {
+            Log.v(TAG, "GOT new incoming call");
+            handleCall(message);
+        } else if (action.equals("call-cancel")) {
+            Log.v(TAG, "GOT new incoming call cancel");
+            //TODO: handle call cancel
+        } else if (action.equals("call-reject")) {
+            Log.v(TAG, "GOT new incoming call reject");
+            //TODO: handle call reject
+        //END CALLING
+        //ROOMS
         } else if (action.equals("room-join")) {
             Log.v(TAG, "GOT new member");
             userJoined(message);
-        } else if (action.equals("rtc-offer")) {
-            Log.v(TAG, "GOT new offer");
-            gotNewOffer(message);
-        } else if (action.equals("rtc-answer")) {
-            Log.v(TAG, "GOT new answer");
-            gotNewAnswer(message);
-        } else if (action.equals("rtc-ice")) {
-            Log.v(TAG, "GOT new ice");
-            gotNewIce(message);
         } else if (action.equals("room-leave")) {
             Log.v(TAG, "GOT new leave");
             userLeft(message);
@@ -313,9 +368,18 @@ public class SignalingConnection {
         } else if (action.equals("room-goodbye")) {
             Log.v(TAG, "GOT room goodbye");
             roomGoodbye(message);
-        } else if (action.equals("call")) {
-            Log.v(TAG, "GOT new incoming call");
-            handleCall(message);
+        //END ROOMS
+        //RTC
+        } else if (action.equals("rtc-ice")) {
+            Log.v(TAG, "GOT new ice");
+            gotNewIce(message);
+        } else if (action.equals("rtc-offer")) {
+            Log.v(TAG, "GOT new offer");
+            gotNewOffer(message);
+        } else if (action.equals("rtc-answer")) {
+            Log.v(TAG, "GOT new answer");
+            gotNewAnswer(message);
+        //END RTC
         } else {
             Log.v(TAG, "Unknown action");
         }
@@ -336,4 +400,5 @@ public class SignalingConnection {
     public void setPeerConnectionsManager(PeerConnectionsManager mPeerConnectionsManager) {
         this.mPeerConnectionsManager = mPeerConnectionsManager;
     }
+
 }

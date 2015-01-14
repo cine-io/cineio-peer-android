@@ -227,4 +227,8 @@ public class CinePeerClient {
     public void joinRoom(String room) {
         mSignalingConnection.joinRoom(room);
     }
+    public void leaveRoom(String room) {
+        mSignalingConnection.leaveRoom(room);
+    }
+
 }
