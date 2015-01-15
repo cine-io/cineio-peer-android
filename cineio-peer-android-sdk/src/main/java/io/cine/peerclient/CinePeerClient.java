@@ -79,7 +79,7 @@ public class CinePeerClient {
         mPeerConnectionsManager.end();
         Log.v(TAG, "disposing video source");
 //        videoSource.dispose();
-        videoSource.stop();
+//        videoSource.stop();
 //        audioSource.dispose();
         Log.v(TAG, "disposing lms");
 //        lMS.dispose();

@@ -66,6 +66,7 @@ class PeerObserver implements PeerConnection.Observer {
     @Override
     public void onDataChannel(DataChannel dataChannel) {
         Log.d(TAG, "onDataChannel");
+        this.rtcMember.setMainDataChannel(dataChannel);
     }
 
     @Override
