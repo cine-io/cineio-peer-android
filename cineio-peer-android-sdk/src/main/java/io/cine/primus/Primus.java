@@ -93,9 +93,12 @@ public class Primus {
         this.openCallback = callback;
     }
 
-    // TODO: return ws on http and wss on https
     private String getProtocolFromUrl() {
-        return "ws";
+        if(url.contains("https://")){
+            return "wss";
+        } else{
+            return "ws";
+        }
     }
 
     Runnable createNewWebsocket = new Runnable() {
@@ -320,12 +323,6 @@ public class Primus {
                 mWebSocket.send(message);
             }
         });
-    }
-
-    private void reConnectAndSendLater(JSONObject j) {
-        Log.v(TAG, "HERE IS WHERE I RECONNECT");
-//        TODO: make this work;
-//        throw new RuntimeException("WEBSOCKET NOT OPEN WHEN SENDING!");
     }
 
     public static interface PrimusWebSocketCallback {

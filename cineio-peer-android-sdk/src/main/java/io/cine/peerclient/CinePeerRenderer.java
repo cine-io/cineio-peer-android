@@ -16,4 +16,5 @@ public interface CinePeerRenderer {
 
     public void onCall(Call call);
 
+    public void onError(CineMessage message);
 }

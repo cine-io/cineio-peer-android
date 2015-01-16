@@ -53,7 +53,6 @@ public class PeerConnectionsManager {
         getPeerConnection(otherClientUUID, otherClientSparkId, createOffer);
     }
 
-    //    TODO: ensure iceServers are added
     private PeerConnection createPeerConnection(String otherClientSparkUUID, String otherClientSparkId, boolean createOffer) {
         Log.d(TAG, "creating new peer connection for: " + otherClientSparkUUID);
         RTCMember rtc = new RTCMember(otherClientSparkUUID);

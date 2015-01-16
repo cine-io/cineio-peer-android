@@ -18,6 +18,7 @@ import java.util.ArrayList;
 
 import io.cine.peerclient.Call;
 import io.cine.peerclient.CallHandler;
+import io.cine.peerclient.CineMessage;
 import io.cine.peerclient.CinePeerClient;
 import io.cine.peerclient.CinePeerClientConfig;
 import io.cine.peerclient.CinePeerRenderer;
@@ -151,5 +152,11 @@ public class MainActivity extends Activity implements CinePeerRenderer {
         });
         Log.v(TAG, "ANSWERING");
         call.answer();
+    }
+
+    @Override
+    public void onError(CineMessage message) {
+    // these messages are errors from the signaling server
+
     }
 }

@@ -8,6 +8,7 @@ import org.json.JSONObject;
 import org.webrtc.IceCandidate;
 import org.webrtc.SessionDescription;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -25,8 +26,9 @@ public class SignalingConnection {
     private final Primus primus;
     private final String uuid;
     private final HashMap<String, Call> calls;
+    private final ArrayList<String> rooms;
     private String publicKey;
-    private String identity;
+    private Identity identity;
     private boolean mWebsocketOpen;
 
     //    we always push messages to a pendingMessagesToProcess
@@ -44,6 +46,7 @@ public class SignalingConnection {
         primus = Primus.connect(config.getActivity(), baseUrl);
         pendingMessagesToProcess = new LinkedList<CineMessage>();
         this.calls = new HashMap<String, Call>();
+        this.rooms = new ArrayList<String>();
 
         setOpenCallback(new Primus.PrimusOpenCallback() {
 
@@ -51,8 +54,8 @@ public class SignalingConnection {
             public void onOpen() {
                 mWebsocketOpen = true;
                 auth();
-                // TODO: reidentify (when reconnecting works)
-                // TODO: rejoin rooms (when reconnecting works)
+                sendIdentify();
+                rejoinAllRooms();
                 processPendingMessages();
             }
         });
@@ -91,22 +94,32 @@ public class SignalingConnection {
     }
 
     public void identify(String identity, String signature, int timestamp) {
-        try {
-            this.identity = identity;
-            JSONObject j = new JSONObject();
-            j.put("action", "identify");
-            j.put("identity", identity);
-            j.put("signature", signature);
-            j.put("timestamp", timestamp);
-            Log.v(TAG, "identifying: " + identity);
-            send(j);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        this.identity = new Identity(identity, signature, timestamp);
+        sendIdentify();
+    }
 
+    private void sendIdentify(){
+        try {
+        JSONObject j = new JSONObject();
+        j.put("action", "identify");
+        j.put("identity", this.identity.getIdentity());
+        j.put("signature", this.identity.getSignature());
+        j.put("timestamp", this.identity.getTimestamp());
+        Log.v(TAG, "identifying: " + identity);
+        send(j);
+    } catch (JSONException e) {
+        e.printStackTrace();
+    }
+    }
+
+    private void rejoinAllRooms(){
+        for(String room: this.rooms){
+            joinRoom(room);
+        }
     }
 
     public void joinRoom(String room) {
+        rooms.add(room);
         try {
             JSONObject j = new JSONObject();
             j.put("action", "room-join");
@@ -114,11 +127,13 @@ public class SignalingConnection {
             Log.v(TAG, "joining room: " + room);
             send(j);
         } catch (JSONException e) {
+            rooms.remove(room);
             e.printStackTrace();
         }
     }
 
     public void leaveRoom(String room) {
+        rooms.remove(room);
         try {
             JSONObject j = new JSONObject();
             j.put("action", "room-leave");
@@ -135,7 +150,7 @@ public class SignalingConnection {
             JSONObject j = new JSONObject();
             j.put("action", "call");
             j.put("otheridentity", otherIdentity);
-            Log.v(TAG, "calling: " + identity);
+            Log.v(TAG, "calling: " + otherIdentity);
             send(j);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -146,9 +161,9 @@ public class SignalingConnection {
         try {
             JSONObject j = new JSONObject();
             j.put("action", "call");
-            j.put("room", "room");
+            j.put("room", room);
             j.put("otheridentity", otherIdentity);
-            Log.v(TAG, "calling: " + identity);
+            Log.v(TAG, "calling: " + otherIdentity);
             send(j);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -188,7 +203,7 @@ public class SignalingConnection {
             j.put("publicKey", this.publicKey);
             j.put("uuid", this.uuid);
             if(this.identity != null){
-                j.put("identity", this.identity);
+                j.put("identity", this.identity.getIdentity());
             }
             primus.send(j);
         } catch (JSONException e) {
@@ -351,7 +366,6 @@ public class SignalingConnection {
         }
     }
 
-    // TODO: send responses
     private void actuallyProcessMessage(CineMessage message) {
         String action = message.getAction();
         Log.v(TAG, "action is: " + action);
@@ -361,7 +375,7 @@ public class SignalingConnection {
             // do nothing
         } else if (action.equals("error")) {
             Log.v(TAG, "GOT ERRORS");
-            //TODO: HANDLE ERROR
+            config.getCinePeerRenderer().onError(message);
         } else if (action.equals("rtc-servers")) {
             Log.v(TAG, "GOT ALL SERVERS");
             gotAllServers(message);
