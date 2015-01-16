@@ -234,7 +234,7 @@ public class CinePeerClient {
         mSignalingConnection.leaveRoom(room);
     }
 
-    public void identify(String identity, String signature, int timestamp) {
+    public void identify(String identity, String signature, long timestamp) {
         mSignalingConnection.identify(identity, signature, timestamp);
     }
 

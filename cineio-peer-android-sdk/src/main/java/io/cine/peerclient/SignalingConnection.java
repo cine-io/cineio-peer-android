@@ -93,12 +93,15 @@ public class SignalingConnection {
         primus.setOpenCallback(callback);
     }
 
-    public void identify(String identity, String signature, int timestamp) {
+    public void identify(String identity, String signature, long timestamp) {
         this.identity = new Identity(identity, signature, timestamp);
         sendIdentify();
     }
 
     private void sendIdentify(){
+        if(this.identity == null){
+            return;
+        }
         try {
         JSONObject j = new JSONObject();
         j.put("action", "identify");

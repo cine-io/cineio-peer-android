@@ -3,6 +3,8 @@ package io.cine.peerclient;
 import android.app.Activity;
 import android.util.Log;
 
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.webrtc.MediaConstraints;
 
 /**
@@ -12,14 +14,15 @@ public class CinePeerClientConfig {
     private static final String TAG = "CinePeerClientConfig";
 
     private final Activity mActivity;
-    private final String mPublicKey;
+    private final String publicKey;
+    private String secretKey;
     private final CinePeerRenderer mCinePeerRenderer;
     private boolean hasVideo;
     private boolean hasAudio;
 
     public CinePeerClientConfig(String publicKey, Activity activity) {
         mActivity = activity;
-        mPublicKey = publicKey;
+        this.publicKey = publicKey;
         if (mActivity instanceof CinePeerRenderer) {
             this.mCinePeerRenderer = (CinePeerRenderer) mActivity;
         } else {
@@ -49,7 +52,7 @@ public class CinePeerClientConfig {
     }
 
     public String getPublicKey() {
-        return mPublicKey;
+        return publicKey;
     }
 
     public MediaConstraints getMediaConstraints() {
@@ -69,5 +72,23 @@ public class CinePeerClientConfig {
 
     public CinePeerRenderer getCinePeerRenderer() {
         return mCinePeerRenderer;
+    }
+
+    public String getSecretKey() {
+        return secretKey;
+    }
+
+    public void setSecretKey(String secretKey) {
+        this.secretKey = secretKey;
+    }
+
+    public Identity generateIdentitySignature(String identity) {
+        return generateIdentitySignature(identity, this.secretKey);
+    }
+    public Identity generateIdentitySignature(String identity, String secretKey) {
+        long timestamp = System.currentTimeMillis();
+        String signatureToSha = "identity="+identity+"&timestamp="+timestamp+secretKey;
+        String signature = new String(Hex.encodeHex(DigestUtils.sha(signatureToSha)));
+        return new Identity(identity, signature, timestamp);
     }
 }

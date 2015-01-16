@@ -6,9 +6,9 @@ package io.cine.peerclient;
 public class Identity {
     private final String identity;
     private final String signature;
-    private final int timestamp;
+    private final long timestamp;
 
-    public Identity(String identity, String signature, int timestamp) {
+    public Identity(String identity, String signature, long timestamp) {
         this.identity = identity;
         this.signature = signature;
         this.timestamp = timestamp;
@@ -22,7 +22,7 @@ public class Identity {
         return signature;
     }
 
-    public int getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 
