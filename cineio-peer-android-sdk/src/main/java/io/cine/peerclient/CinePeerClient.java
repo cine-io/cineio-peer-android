@@ -73,13 +73,17 @@ public class CinePeerClient {
 
 //        dispose of all the local video capture/rendering
 //        NOTE: Order is important here. This order seems to work/not crash.
-        Log.v(TAG, "disposing video capturer");
-        capturer.dispose();
+        if(capturer != null){
+            Log.v(TAG, "disposing video capturer");
+            capturer.dispose();
+        }
         mPeerConnectionsManager.end();
-        Log.v(TAG, "disposing video source");
-//        videoSource.dispose();
-        Log.v(TAG, "VIDEO SOURCE STATE: "+ videoSource.state().toString());
-        videoSource.stop();
+        if(videoSource != null){
+            Log.v(TAG, "disposing video source");
+//          videoSource.dispose();
+            Log.v(TAG, "VIDEO SOURCE STATE: "+ videoSource.state().toString());
+            videoSource.stop();
+        }
 //        audioSource.dispose();
         Log.v(TAG, "disposing lms");
 //        lMS.dispose();

@@ -29,12 +29,15 @@ public class Primus {
     private final String baseUrl;
     private final String url;
     private final Queue<String> messages;
+    private int reconnectAttempt;
     public WebSocket mWebSocket;
     private Handler mHandler;
     private PrimusDataCallback dataCallback;
     private PrimusOpenCallback openCallback;
     private PrimusWebSocketCallback websocketCallback;
+    private boolean autoReconnect;
     private int currentTimerRun;
+    private static final String INTENTIONAL_SERVER_END = "\"primus::server::close\"";
 
     Runnable heartbeatTask = new Runnable() {
         @Override
@@ -44,8 +47,7 @@ public class Primus {
             if (!websocketIsOpen()) {
                 currentTimerRun = 0;
                 Log.v(TAG, "Reconnecting to primus");
-                throw new RuntimeException("SOCKET IS CLOSED! NOT RECONNECTING!");
-//                reconnect();
+                reconnect();
             }
             if (currentTimerRun >= 10) {
                 currentTimerRun = 0;
@@ -70,7 +72,9 @@ public class Primus {
         currentTimerRun = 0;
         messages = new LinkedList<String>();
         connecting = true;
-        createNewWebsocket();
+        autoReconnect = true;
+        reconnectAttempt = 0;
+        mHandler.post(createNewWebsocket);
     }
 
     public static Primus connect(Activity activity, String url) {
@@ -94,89 +98,116 @@ public class Primus {
         return "ws";
     }
 
-    private void createNewWebsocket() {
-        Log.v(TAG, "connecting to: "+ url);
-        AsyncHttpClient.getDefaultInstance().websocket(url, getProtocolFromUrl(), new AsyncHttpClient.WebSocketConnectCallback() {
+    Runnable createNewWebsocket = new Runnable() {
+        @Override
+        public void run() {
+            Log.v(TAG, "connecting to: " + url);
+            AsyncHttpClient.getDefaultInstance().websocket(url, getProtocolFromUrl(), new AsyncHttpClient.WebSocketConnectCallback() {
 
-            @Override
-            public void onCompleted(Exception ex, WebSocket returnedWebsocket) {
-                Log.v(TAG, "completed");
+                @Override
+                public void onCompleted(Exception ex, WebSocket returnedWebsocket) {
+                    Log.v(TAG, "completed");
+                    connecting = false;
 
-                if (ex != null) {
-                    ex.printStackTrace();
-                    return;
-                }
-                mWebSocket = returnedWebsocket;
-                connecting = false;
-
-                mWebSocket.setDataCallback(new DataCallback() {
-                    @Override
-                    public void onDataAvailable(DataEmitter dataEmitter, ByteBufferList byteBufferList) {
-                        Log.v(TAG, "I got some bytes!");
-                        // note that this data has been read
-                        byteBufferList.recycle();
+                    if (ex != null) {
+                        Log.v(TAG, "GOT CONNECTION EXCEPTION");
+                        ex.printStackTrace();
+                        reconnect();
+                        return;
                     }
-                });
+                    reconnectAttempt = 0;
+                    mWebSocket = returnedWebsocket;
 
-                mWebSocket.setClosedCallback(new CompletedCallback() {
-                    @Override
-                    public void onCompleted(Exception e) {
-                        if (e != null) {
-                            e.printStackTrace();
-                            return;
+                    mWebSocket.setDataCallback(new DataCallback() {
+                        @Override
+                        public void onDataAvailable(DataEmitter dataEmitter, ByteBufferList byteBufferList) {
+                            Log.v(TAG, "I got some bytes!");
+                            // note that this data has been read
+                            byteBufferList.recycle();
                         }
-                        Log.v(TAG, "ws: closedCallback onCompleted");
-                    }
-                });
-                mWebSocket.setEndCallback(new CompletedCallback() {
-                    @Override
-                    public void onCompleted(Exception e) {
-                        if (e != null) {
-                            e.printStackTrace();
-                            return;
-                        }
+                    });
 
-                        Log.d(TAG, "ws: endCallback onCompleted");
-                    }
-                });
-                mWebSocket.setStringCallback(new WebSocket.StringCallback() {
-                    public void onStringAvailable(String s) {
-                        Log.v(TAG, "got string: " + s);
-                        try {
-                            JSONObject response;
-                            if (s.startsWith("o")) {
-                                if (openCallback != null) {
-                                    openCallback.onOpen();
-                                }
-                            } else if (s.startsWith("a")) {
-                                Log.v(TAG, "received array");
-                                s = s.substring(1);
-                                JSONArray r = new JSONArray(s);
-                                Log.v(TAG, "parsed array");
-                                response = new JSONObject(r.getString(0));
-                                if (dataCallback != null) {
-                                    dataCallback.onData(response);
-                                }
-                            } else {
-                                Log.v(TAG, "received something else");
+                    mWebSocket.setClosedCallback(new CompletedCallback() {
+                        @Override
+                        public void onCompleted(Exception e) {
+                            if (e != null) {
+                                e.printStackTrace();
                                 return;
                             }
-                        } catch (JSONException e) {
-                            Log.v(TAG, "UNABLE TO PARSE RESPONSE");
-                            e.printStackTrace();
+                            //on network error
+                            Log.v(TAG, "ws: closedCallback onCompleted");
+
+                            if (autoReconnect) {
+                                reconnect();
+                            } else {
+                                cancelHeartbeat();
+                            }
                         }
+                    });
+                    mWebSocket.setEndCallback(new CompletedCallback() {
+                        @Override
+                        public void onCompleted(Exception e) {
+                            if (e != null) {
+                                e.printStackTrace();
+                                return;
+                            }
+
+                            Log.d(TAG, "ws: endCallback onCompleted");
+                        }
+                    });
+                    mWebSocket.setStringCallback(new WebSocket.StringCallback() {
+                        public void onStringAvailable(String s) {
+                            Log.v(TAG, "got string: " + s);
+                            try {
+                                JSONObject response;
+                                if (s.startsWith("o")) {
+                                    if (openCallback != null) {
+                                        openCallback.onOpen();
+                                    }
+                                } else if (s.startsWith("a")) {
+                                    Log.v(TAG, "received array");
+                                    s = s.substring(1);
+                                    JSONArray r = new JSONArray(s);
+                                    Log.v(TAG, "parsed array");
+                                    String data = r.getString(0);
+                                    //it's a message from within primus
+                                    if (data.charAt(0) == '"') {
+                                        Log.v(TAG, "Primus message");
+
+                                        if (data.equals(INTENTIONAL_SERVER_END)) {
+                                            autoReconnect = false;
+                                            Log.v(TAG, "SERVER CLOSED");
+                                        }
+                                        // a json message
+                                    } else {
+                                        response = new JSONObject(data);
+                                        Log.v(TAG, "Parsed user message");
+                                        if (dataCallback != null) {
+                                            dataCallback.onData(response);
+                                        }
+                                    }
+
+                                } else {
+                                    Log.v(TAG, "received something else");
+                                    return;
+                                }
+                            } catch (JSONException e) {
+                                Log.v(TAG, "UNABLE TO PARSE RESPONSE");
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                    scheduleHeartbeat();
+                    if (websocketCallback != null) {
+                        websocketCallback.onWebSocket(mWebSocket);
                     }
-                });
-                scheduleHeartbeat();
-                if (websocketCallback != null) {
-                    websocketCallback.onWebSocket(mWebSocket);
+
                 }
 
-            }
+            });
 
-        });
-
-    }
+        }
+    };
 
     private void scheduleHeartbeat() {
         mHandler.postDelayed(heartbeatTask, 1000);
@@ -214,6 +245,11 @@ public class Primus {
     }
 
     public void end() {
+        autoReconnect = false;
+        cancelHeartBeatAndCloseWebSocket();
+    }
+
+    private void cancelHeartBeatAndCloseWebSocket(){
         cancelHeartbeat();
         if (mWebSocket != null) {
             mWebSocket.end();
@@ -243,8 +279,9 @@ public class Primus {
                 Log.d(TAG, "ACTUALLY SENDING: " + message);
                 actuallySendMessage(message);
             }
-        } else {
+        } else if(autoReconnect){
             reconnect();
+        } else {
         }
     }
 
@@ -256,13 +293,25 @@ public class Primus {
     }
 
     private void reconnect() {
-        // if we're already connecting, don't try to reconnect;
+        Log.v(TAG, "wanting to reconnect");
+        // if we're already connecting, don't try to autoReconnect;
         if (connecting) {
             return;
         }
+        reconnectAttempt += 1;
         connecting = true;
-        end();
-        createNewWebsocket();
+        cancelHeartBeatAndCloseWebSocket();
+        long millisecondsToDelay = calculateRetryDelay();
+        Log.v(TAG, "Reconnecting in " + millisecondsToDelay +" milliseconds");
+        mHandler.postDelayed(createNewWebsocket, millisecondsToDelay);
+    }
+
+    // http://dthain.blogspot.nl/2009/02/exponential-backoff-in-distributed.html
+    private long calculateRetryDelay() {
+        int minDelay = 500;
+        int factor = 2;
+        long millisecondsToDelay = Math.round((Math.random() + 1) * minDelay * Math.pow(factor, reconnectAttempt));
+        return millisecondsToDelay;
     }
 
     private void actuallySendMessage(final String message) {
