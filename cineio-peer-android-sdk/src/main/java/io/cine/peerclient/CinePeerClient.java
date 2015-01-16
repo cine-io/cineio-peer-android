@@ -43,9 +43,8 @@ public class CinePeerClient {
         mSignalingConnection.setPeerConnectionsManager(mPeerConnectionsManager);
     }
 
-    public static CinePeerClient init(CinePeerClientConfig config) throws PlayUnavailableException {
+    public static CinePeerClient init(CinePeerClientConfig config) {
         CinePeerClient c = new CinePeerClient(config);
-        c.registerWithCine();
         return c;
     }
 
@@ -60,7 +59,7 @@ public class CinePeerClient {
 
     }
 
-    private void registerWithCine() throws PlayUnavailableException {
+    private void registerDeviceForPushNotifications() throws PlayUnavailableException {
         GcmRegisterer.registerWithCine(mConfig.getActivity());
     }
 

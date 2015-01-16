@@ -22,7 +22,6 @@ import io.cine.peerclient.CinePeerClient;
 import io.cine.peerclient.CinePeerClientConfig;
 import io.cine.peerclient.CinePeerRenderer;
 import io.cine.peerclient.CinePeerView;
-import io.cine.peerclient.receiver.PlayUnavailableException;
 
 public class MainActivity extends Activity implements CinePeerRenderer {
     private static final String TAG = "MainActivity";
@@ -56,12 +55,7 @@ public class MainActivity extends Activity implements CinePeerRenderer {
         CinePeerClientConfig config = new CinePeerClientConfig(PUBLIC_KEY, this);
         config.setVideo(true);
         config.setAudio(true);
-        try {
-            cinePeerClient = CinePeerClient.init(config);
-        } catch (PlayUnavailableException e) {
-            Log.v(TAG, "Google Play is unavailable");
-            e.printStackTrace();
-        }
+        cinePeerClient = CinePeerClient.init(config);
     }
 
     private void prepareLayout() {
