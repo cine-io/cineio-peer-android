@@ -1,6 +1,5 @@
 package io.cine.peerclient;
 
-import android.app.Activity;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -9,6 +8,7 @@ import org.json.JSONObject;
 import org.webrtc.IceCandidate;
 import org.webrtc.SessionDescription;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.UUID;
@@ -20,10 +20,11 @@ import io.cine.primus.Primus;
  */
 public class SignalingConnection {
     private static final String TAG = "SignalingConnection";
-    private final Activity activity;
+    private final CinePeerClientConfig config;
     private final String baseUrl = "http://192.168.1.139:8443/primus";
     private final Primus primus;
     private final String uuid;
+    private final HashMap<String, Call> calls;
     private String publicKey;
     private String identity;
     private boolean mWebsocketOpen;
@@ -35,12 +36,14 @@ public class SignalingConnection {
     private Queue<CineMessage> pendingMessagesToProcess;
     private PeerConnectionsManager mPeerConnectionsManager;
 
-    private SignalingConnection(Activity activity) {
-        this.activity = activity;
+    private SignalingConnection(CinePeerClientConfig config) {
+        this.config = config;
+        this.publicKey = config.getPublicKey();
         this.mWebsocketOpen = false;
         this.uuid = UUID.randomUUID().toString();
-        primus = Primus.connect(activity, baseUrl);
+        primus = Primus.connect(config.getActivity(), baseUrl);
         pendingMessagesToProcess = new LinkedList<CineMessage>();
+        this.calls = new HashMap<String, Call>();
 
         setOpenCallback(new Primus.PrimusOpenCallback() {
 
@@ -75,12 +78,8 @@ public class SignalingConnection {
         }
     }
 
-    public static SignalingConnection connect(Activity activity) {
-        return new SignalingConnection(activity);
-    }
-
-    public void init(String apiKey) {
-        this.publicKey = apiKey;
+    public static SignalingConnection connect(CinePeerClientConfig config) {
+        return new SignalingConnection(config);
     }
 
     public void setDataCallback(Primus.PrimusDataCallback callback) {
@@ -91,12 +90,14 @@ public class SignalingConnection {
         primus.setOpenCallback(callback);
     }
 
-    public void identify(String identity) {
+    public void identify(String identity, String signature, int timestamp) {
         try {
             this.identity = identity;
             JSONObject j = new JSONObject();
             j.put("action", "identify");
             j.put("identity", identity);
+            j.put("signature", signature);
+            j.put("timestamp", timestamp);
             Log.v(TAG, "identifying: " + identity);
             send(j);
         } catch (JSONException e) {
@@ -186,7 +187,9 @@ public class SignalingConnection {
             j.put("client", "cineio-peer-android version-" + CinePeerClient.VERSION);
             j.put("publicKey", this.publicKey);
             j.put("uuid", this.uuid);
-            // TODO: send identity
+            if(this.identity != null){
+                j.put("identity", this.identity);
+            }
             primus.send(j);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -286,9 +289,28 @@ public class SignalingConnection {
     }
 
     private void handleCall(CineMessage response) {
-        //TODO: HANDLE CALL response.getString("room")
+        Call call = callFromFromRoom(response.getString("room"), false);
+        config.getCinePeerRenderer().onCall(call);
     }
 
+    private void handleCallCancel(CineMessage response) {
+        Call call = callFromFromRoom(response.getString("room"), false);
+        call.cancelled(response.getString("identity"));
+    }
+
+    private void handleCallReject(CineMessage response) {
+        Call call = callFromFromRoom(response.getString("room"), false);
+        call.rejected(response.getString("identity"));
+    }
+
+    private Call callFromFromRoom(String room, boolean initiated){
+        Call call = calls.get(room);
+        if (call == null){
+            call = new Call(room, this, initiated);
+            calls.put(room, call);
+        }
+        return call;
+    }
 
     private void gotAllServers(CineMessage response) {
         try {
@@ -350,10 +372,10 @@ public class SignalingConnection {
             handleCall(message);
         } else if (action.equals("call-cancel")) {
             Log.v(TAG, "GOT new incoming call cancel");
-            //TODO: handle call cancel
+            handleCallCancel(message);
         } else if (action.equals("call-reject")) {
             Log.v(TAG, "GOT new incoming call reject");
-            //TODO: handle call reject
+            handleCallReject(message);
         //END CALLING
         //ROOMS
         } else if (action.equals("room-join")) {

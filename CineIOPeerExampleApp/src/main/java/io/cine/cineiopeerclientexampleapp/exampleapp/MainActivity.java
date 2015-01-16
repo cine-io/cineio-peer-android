@@ -1,6 +1,7 @@
 package io.cine.cineiopeerclientexampleapp.exampleapp;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -16,6 +17,7 @@ import org.webrtc.VideoRendererGui;
 import java.util.ArrayList;
 
 import io.cine.peerclient.Call;
+import io.cine.peerclient.CallHandler;
 import io.cine.peerclient.CinePeerClient;
 import io.cine.peerclient.CinePeerClientConfig;
 import io.cine.peerclient.CinePeerRenderer;
@@ -139,6 +141,21 @@ public class MainActivity extends Activity implements CinePeerRenderer {
 
     @Override
     public void onCall(Call call) {
+        final Context self = this;
+        call.setCallHandler(new CallHandler() {
+            @Override
+            public void onCancel(String identity) {
+                String text = identity + " cancelled.";
+                Toast.makeText(self, text, Toast.LENGTH_SHORT);
+            }
 
+            @Override
+            public void onReject(String identity) {
+                String text = identity + " rejected.";
+                Toast.makeText(self, text, Toast.LENGTH_SHORT);
+            }
+        });
+        Log.v(TAG, "ANSWERING");
+        call.answer();
     }
 }

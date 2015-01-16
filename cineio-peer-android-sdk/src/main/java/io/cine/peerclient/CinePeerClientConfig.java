@@ -48,7 +48,7 @@ public class CinePeerClientConfig {
         return mActivity;
     }
 
-    public String getApiKey() {
+    public String getPublicKey() {
         return mPublicKey;
     }
 

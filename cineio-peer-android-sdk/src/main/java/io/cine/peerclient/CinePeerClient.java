@@ -39,8 +39,7 @@ public class CinePeerClient {
         mConfig = config;
         ensureFactoryGlobals();
         mPeerConnectionsManager = new PeerConnectionsManager(this);
-        mSignalingConnection = SignalingConnection.connect(config.getActivity());
-        mSignalingConnection.init(config.getApiKey());
+        mSignalingConnection = SignalingConnection.connect(config);
         mSignalingConnection.setPeerConnectionsManager(mPeerConnectionsManager);
     }
 
@@ -232,4 +231,11 @@ public class CinePeerClient {
         mSignalingConnection.leaveRoom(room);
     }
 
+    public void identify(String identity, String signature, int timestamp) {
+        mSignalingConnection.identify(identity, signature, timestamp);
+    }
+
+    public void call(String identity) {
+        mSignalingConnection.call(identity);
+    }
 }

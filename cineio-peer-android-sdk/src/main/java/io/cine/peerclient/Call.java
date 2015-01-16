@@ -13,6 +13,7 @@ public class Call {
     private final SignalingConnection signalingConnection;
     private final String room;
     private STATE state;
+    private CallHandler callHandler;
 
     public static enum STATE {INITIATED, IN_CALL, state, ENDED};
 
@@ -27,12 +28,28 @@ public class Call {
         this.participants = new HashMap<String, Participant>();
     }
 
+    public void setCallHandler(CallHandler handler){
+        this.callHandler = handler;
+    }
+
     public boolean isInCall(){
         return this.state == STATE.IN_CALL;
     }
 
     public boolean isEnded(){
         return this.state == STATE.ENDED;
+    }
+
+    public void cancelled(String identity) {
+        if(this.callHandler != null){
+            callHandler.onCancel(identity);
+        }
+    }
+
+    public void rejected(String identity) {
+        if(this.callHandler != null){
+            callHandler.onReject(identity);
+        }
     }
 
     public void answer(){
