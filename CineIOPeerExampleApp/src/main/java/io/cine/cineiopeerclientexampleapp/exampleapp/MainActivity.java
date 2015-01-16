@@ -5,7 +5,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.webrtc.MediaStream;
 import org.webrtc.VideoRenderer;
@@ -121,14 +123,18 @@ public class MainActivity extends Activity implements CinePeerRenderer {
                 toDelete = msr;
             }
         }
-
+        // do not clear out the video stream renderer, it will segfault
         mediaStreamAndRenderers.remove(toDelete);
         recalculateLayout();
     }
 
     @Override
     public void peerData(JSONObject object) {
-
+        try {
+            Toast.makeText(this, object.getString("message"), Toast.LENGTH_SHORT);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

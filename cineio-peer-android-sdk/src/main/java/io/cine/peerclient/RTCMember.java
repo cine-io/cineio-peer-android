@@ -65,6 +65,7 @@ public class RTCMember {
     }
 
     public void setMainDataChannel(final DataChannel mainDataChannel) {
+        Log.v(TAG, "SETTING DATA CHANNEL");
         this.mainDataChannel = mainDataChannel;
         this.mainDataChannel.registerObserver(new DataChannel.Observer() {
             @Override

@@ -61,6 +61,8 @@ public class CinePeerClientConfig {
                 "OfferToReceiveVideo", "true"));
 
         constraints.optional.add(new MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"));
+        constraints.optional.add(new MediaConstraints.KeyValuePair("RtpDataChannels", "true"));
+//        constraints.optional.add(new MediaConstraints.KeyValuePair("internalSctpDataChannels", "true"));
         Log.d(TAG, "created new constraints");
         return constraints;
     }

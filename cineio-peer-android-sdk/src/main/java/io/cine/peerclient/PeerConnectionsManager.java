@@ -19,6 +19,8 @@ import java.util.HashMap;
  */
 public class PeerConnectionsManager {
     private static final String TAG = "StartRTC";
+    private static final String MAIN_DATA_CHANNEL_NAME = "CINE";
+
     private static PeerConnectionFactory factory;
     private final CinePeerClient mCinePeerClient;
     private final HashMap<String, RTCMember> rtcMembers;
@@ -72,7 +74,10 @@ public class PeerConnectionsManager {
 
         Log.d(TAG, "created new peerConnection");
 //        this is supposed to be a blank media constraints
-        peerConnection.addStream(mediaStream, new MediaConstraints());
+        MediaConstraints newPeerMediaConstraints = new MediaConstraints();
+        newPeerMediaConstraints.optional.add(new MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"));
+        newPeerMediaConstraints.optional.add(new MediaConstraints.KeyValuePair("RtpDataChannels", "true"));
+        peerConnection.addStream(mediaStream, newPeerMediaConstraints);
         Log.d(TAG, "added stream");
 
         LocalOfferSDPObserver localOfferSDPObserver = new LocalOfferSDPObserver(rtc, mCinePeerClient);

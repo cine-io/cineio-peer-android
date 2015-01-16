@@ -32,6 +32,7 @@ public class RemoteOfferSDPObserver implements SdpObserver {
     public void onSetSuccess() {
         mCinePeerClient.runOnUiThread(new Runnable() {
             public void run() {
+                Log.v(TAG, "SET REMOTE OFFER");
                 PeerConnection peerConnection = mRTCMember.getPeerConnection();
                 LocalAnswerSDPObserver localAnswerSDPObserver = new LocalAnswerSDPObserver(mRTCMember, mCinePeerClient);
                 peerConnection.createAnswer(localAnswerSDPObserver, mCinePeerClient.getMediaConstraints());
