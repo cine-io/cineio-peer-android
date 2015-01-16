@@ -23,7 +23,7 @@ public class CineMessage {
 
     public CineMessage(Bundle bundle) {
         this.bundle = bundle;
-        this.kind = KIND.BUDNLE;
+        this.kind = KIND.BUNDLE;
     }
 
     public String getString(String key) {
@@ -33,7 +33,7 @@ public class CineMessage {
                 case JSON:
                     response = json.getString(key);
                     break;
-                case BUDNLE:
+                case BUNDLE:
                     response = bundle.getString(key);
                     break;
             }
@@ -50,10 +50,8 @@ public class CineMessage {
                 case JSON:
                     response = json.getJSONArray(key);
                     break;
-                case BUDNLE:
-                    // TODO: NOT IMPLEMENTED
-                    throw new RuntimeException("NOT IMPLEMENTED");
-//                   response = bundle.getStringArray(key);
+                case BUNDLE:
+                    response = new JSONArray(bundle.getString(key));
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -69,10 +67,8 @@ public class CineMessage {
                 case JSON:
                     response = json.getJSONObject(key);
                     break;
-                case BUDNLE:
-                    // TODO: NOT IMPLEMENTED
-                    throw new RuntimeException("NOT IMPLEMENTED");
-//                   response = bundle.getStringArray(key);
+                case BUNDLE:
+                    response = new JSONObject(bundle.getString(key));
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -85,7 +81,7 @@ public class CineMessage {
         return getString("action");
     }
 
-    private static enum KIND {JSON, BUDNLE}
+    private static enum KIND {JSON, BUNDLE}
 
 
 }
