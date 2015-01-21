@@ -1,6 +1,8 @@
 # Android peer client
 
-The [android library](http://mvnrepository.com/artifact/io.cine/cineio-peer-android-sdk) for [cine.io peer](https://www.cine.io/products/peer).
+[![Build Status](https://travis-ci.org/cine-io/cineio-peer-android.svg?branch=master)](https://travis-ci.org/cine-io/cineio-peer-android)
+
+The android library for [cine.io peer](https://www.cine.io/products/peer).
 
 
 ## Installation
