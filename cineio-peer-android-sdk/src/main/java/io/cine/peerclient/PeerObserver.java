@@ -59,11 +59,6 @@ class PeerObserver implements PeerConnection.Observer {
     }
 
     @Override
-    public void onError() {
-        Log.d(TAG, "onError");
-    }
-
-    @Override
     public void onDataChannel(DataChannel dataChannel) {
         Log.d(TAG, "onDataChannel");
         this.rtcMember.setMainDataChannel(dataChannel);

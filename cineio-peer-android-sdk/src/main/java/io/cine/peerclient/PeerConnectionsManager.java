@@ -75,8 +75,8 @@ public class PeerConnectionsManager {
 //        this is supposed to be a blank media constraints
         MediaConstraints newPeerMediaConstraints = new MediaConstraints();
         newPeerMediaConstraints.optional.add(new MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"));
-        newPeerMediaConstraints.optional.add(new MediaConstraints.KeyValuePair("RtpDataChannels", "true"));
-        peerConnection.addStream(mediaStream, newPeerMediaConstraints);
+//        newPeerMediaConstraints.optional.add(new MediaConstraints.KeyValuePair("RtpDataChannels", "true"));
+        peerConnection.addStream(mediaStream);
         Log.d(TAG, "added stream");
 
         LocalOfferSDPObserver localOfferSDPObserver = new LocalOfferSDPObserver(rtc, mCinePeerClient);

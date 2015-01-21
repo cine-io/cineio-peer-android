@@ -8,8 +8,6 @@ import android.util.Log;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.webrtc.MediaStream;
 import org.webrtc.VideoRenderer;
 import org.webrtc.VideoRendererGui;
@@ -19,14 +17,15 @@ import java.util.ArrayList;
 import io.cine.peerclient.Call;
 import io.cine.peerclient.CallHandler;
 import io.cine.peerclient.CineMessage;
+import io.cine.peerclient.CinePeerCallback;
 import io.cine.peerclient.CinePeerClient;
 import io.cine.peerclient.CinePeerClientConfig;
-import io.cine.peerclient.CinePeerRenderer;
 import io.cine.peerclient.CinePeerView;
 
-public class MainActivity extends Activity implements CinePeerRenderer {
+public class MainActivity extends Activity implements CinePeerCallback {
     private static final String TAG = "MainActivity";
     private static final String PUBLIC_KEY = "CINE_IO_PUBLIC_KEY";
+    private static final String SECRET_KEY = "CINE_IO_SECRET_KEY"; //Only used for identifying
 
     private CinePeerView vsv;
     private CinePeerClient cinePeerClient;
@@ -72,7 +71,8 @@ public class MainActivity extends Activity implements CinePeerRenderer {
         int height = 25;
         int x = count * 25;
         int y = 5;
-        return VideoRendererGui.create(x,y, width, height);
+
+        return VideoRendererGui.create(x,y, width, height, VideoRendererGui.ScalingType.SCALE_ASPECT_FILL, false);
     }
 
     private void recalculateLayout() {
@@ -94,7 +94,8 @@ public class MainActivity extends Activity implements CinePeerRenderer {
             l.removeView(vsv);
         }
         vsv = cinePeerClient.createView();
-        VideoRendererGui.setView(vsv);
+        Runnable eglContextReadyCallback = null;
+        VideoRendererGui.setView(vsv, eglContextReadyCallback);
         l.addView(vsv);
     }
 
@@ -123,15 +124,6 @@ public class MainActivity extends Activity implements CinePeerRenderer {
         // do not clear out the video stream renderer, it will segfault
         mediaStreamAndRenderers.remove(toDelete);
         recalculateLayout();
-    }
-
-    @Override
-    public void peerData(JSONObject object) {
-        try {
-            Toast.makeText(this, object.getString("message"), Toast.LENGTH_SHORT);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
     }
 
     @Override

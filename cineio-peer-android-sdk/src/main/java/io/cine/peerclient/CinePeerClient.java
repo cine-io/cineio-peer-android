@@ -50,8 +50,9 @@ public class CinePeerClient {
 
     private void ensureFactoryGlobals() {
         if (!factoryStaticInitialized) {
-            RTCHelper.abortUnless(PeerConnectionFactory.initializeAndroidGlobals(
-                            mConfig.getActivity(), true, true),
+            boolean initialized = PeerConnectionFactory.initializeAndroidGlobals(
+                    mConfig.getActivity(), true, true, false,null);
+            RTCHelper.abortUnless(initialized,
                     "Failed to initializeAndroidGlobals"
             );
             factoryStaticInitialized = true;

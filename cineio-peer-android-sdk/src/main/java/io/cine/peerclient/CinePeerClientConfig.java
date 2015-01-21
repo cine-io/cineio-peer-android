@@ -16,17 +16,17 @@ public class CinePeerClientConfig {
     private final Activity mActivity;
     private final String publicKey;
     private String secretKey;
-    private final CinePeerRenderer mCinePeerRenderer;
+    private final CinePeerCallback mCinePeerCallback;
     private boolean hasVideo;
     private boolean hasAudio;
 
     public CinePeerClientConfig(String publicKey, Activity activity) {
         mActivity = activity;
         this.publicKey = publicKey;
-        if (mActivity instanceof CinePeerRenderer) {
-            this.mCinePeerRenderer = (CinePeerRenderer) mActivity;
+        if (mActivity instanceof CinePeerCallback) {
+            this.mCinePeerCallback = (CinePeerCallback) mActivity;
         } else {
-            throw new RuntimeException("Activity does not implement CinePeerRenderer please use constructor (Activity, CinePeerRenderer)");
+            throw new RuntimeException("Activity does not implement CinePeerCallback please use constructor (Activity, CinePeerCallback)");
         }
     }
 
@@ -64,14 +64,13 @@ public class CinePeerClientConfig {
                 "OfferToReceiveVideo", "true"));
 
         constraints.optional.add(new MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"));
-        constraints.optional.add(new MediaConstraints.KeyValuePair("RtpDataChannels", "true"));
-//        constraints.optional.add(new MediaConstraints.KeyValuePair("internalSctpDataChannels", "true"));
+//        constraints.optional.add(new MediaConstraints.KeyValuePair("RtpDataChannels", "true"));
         Log.d(TAG, "created new constraints");
         return constraints;
     }
 
-    public CinePeerRenderer getCinePeerRenderer() {
-        return mCinePeerRenderer;
+    public CinePeerCallback getCinePeerRenderer() {
+        return mCinePeerCallback;
     }
 
     public String getSecretKey() {
