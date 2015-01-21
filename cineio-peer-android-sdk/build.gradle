@@ -1,4 +1,4 @@
-apply plugin: 'com.android.library'
+apply plugin: 'android-library'
 
 android {
     compileSdkVersion 20
@@ -9,7 +9,7 @@ android {
         minSdkVersion 17
         targetSdkVersion 20
         versionCode 1
-        versionName "1.0"
+        versionName "0.0.1"
     }
     buildTypes {
         release {
@@ -17,6 +17,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    productFlavors {
+    }
+
 }
 
 dependencies {
@@ -27,3 +30,4 @@ dependencies {
     compile 'commons-codec:commons-codec:1.5'
     compile files('src/main/libs/libjingle_peerconnection.jar')
 }
+apply from: 'https://raw.githubusercontent.com/cine-io/gradle-mvn-push/master/gradle-mvn-push.gradle'
