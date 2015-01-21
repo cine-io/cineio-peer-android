@@ -21,8 +21,8 @@ import io.cine.primus.Primus;
  */
 public class SignalingConnection {
     private static final String TAG = "SignalingConnection";
+    private final String CINE_SIGNALING_URL = "http://signaling.cine.io/primus";
     private final CinePeerClientConfig config;
-    private final String baseUrl = "http://192.168.1.139:8443/primus";
     private final Primus primus;
     private final String uuid;
     private final HashMap<String, Call> calls;
@@ -43,7 +43,7 @@ public class SignalingConnection {
         this.publicKey = config.getPublicKey();
         this.mWebsocketOpen = false;
         this.uuid = UUID.randomUUID().toString();
-        primus = Primus.connect(config.getActivity(), baseUrl);
+        primus = Primus.connect(config.getActivity(), CINE_SIGNALING_URL);
         pendingMessagesToProcess = new LinkedList<CineMessage>();
         this.calls = new HashMap<String, Call>();
         this.rooms = new ArrayList<String>();
