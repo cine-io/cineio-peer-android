@@ -26,6 +26,7 @@ public class MainActivity extends Activity implements CinePeerCallback {
     private static final String TAG = "MainActivity";
     private static final String PUBLIC_KEY = "CINE_IO_PUBLIC_KEY";
     private static final String SECRET_KEY = "CINE_IO_SECRET_KEY"; //Only used for identifying
+    private static final String EXAMPLE_ROOM_NAME = "hello";
 
     private CinePeerView vsv;
     private CinePeerClient cinePeerClient;
@@ -37,7 +38,7 @@ public class MainActivity extends Activity implements CinePeerCallback {
         connectToCine();
         prepareLayout();
         cinePeerClient.startMediaStream();
-            cinePeerClient.joinRoom("hello");
+        cinePeerClient.joinRoom(EXAMPLE_ROOM_NAME);
     }
 
     @Override
