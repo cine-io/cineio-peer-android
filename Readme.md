@@ -11,7 +11,7 @@ Add the following to your `build.gradle`.
 
 ```groovy
 dependencies {
-  compile 'io.cine:cineio-peer-android-sdk:0.0.1'
+  compile 'io.cine:cineio-peer-android-sdk:0.0.2'
 }
 ```
 

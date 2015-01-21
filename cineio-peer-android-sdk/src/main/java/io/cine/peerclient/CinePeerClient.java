@@ -24,7 +24,7 @@ import io.cine.peerclient.receiver.PlayUnavailableException;
 public class CinePeerClient {
     private static final String TAG = "CinePeerClient";
 
-    public static final String VERSION = "0.0.1";
+    public static final String VERSION = "0.0.2";
 
     private static CinePeerClientConfig mConfig;
     private final PeerConnectionsManager mPeerConnectionsManager;
