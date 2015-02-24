@@ -29,7 +29,7 @@ repositories {
 }
 ```
 
-Download cineio-broadcast-android-sdk to your application with `./gradlew build`.
+Download cineio-peer-android-sdk to your application with `./gradlew build`.
 
 ## Usage
 
