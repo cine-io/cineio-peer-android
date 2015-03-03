@@ -188,7 +188,7 @@ public class SignalingConnection {
     public void rejectCall(String room) {
         try {
             JSONObject j = new JSONObject();
-            j.put("action", "reject-call");
+            j.put("action", "call-reject");
             j.put("room", "room");
             send(j);
         } catch (JSONException e) {
