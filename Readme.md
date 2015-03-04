@@ -68,3 +68,19 @@ public class MainActivity extends Activity implements CinePeerCallback {
 ## Example App
 
 The best way to see it in action is to run the example app locally. There's some trickiness around rendering the peer videos. You can find the example Activity here: https://github.com/cine-io/cineio-peer-android/blob/master/CineIOPeerExampleApp/src/main/java/io/cine/cineiopeerclientexampleapp/exampleapp/MainActivity.java
+
+### Running Locally
+
+1. Clone to your local machine:
+
+  ```
+  git clone git@github.com:cine-io/cineio-peer-android.git
+  cd cineio-peer-android
+  ```
+* Register for a public and secret key at [cine.io][cine-io]
+* Update `PUBLIC_KEY` in [MainActivity][main-activity-public-key]
+* Open with Android Studio
+
+<!-- external links -->
+[cine-io]:https://www.cine.io/
+[main-activity-public-key]:CineIOPeerExampleApp/src/main/java/io/cine/cineiopeerclientexampleapp/exampleapp/MainActivity.java#L21
