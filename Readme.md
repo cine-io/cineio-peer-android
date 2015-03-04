@@ -83,4 +83,4 @@ The best way to see it in action is to run the example app locally. There's some
 
 <!-- external links -->
 [cine-io]:https://www.cine.io/
-[main-activity-public-key]:CineIOPeerExampleApp/src/main/java/io/cine/cineiopeerclientexampleapp/exampleapp/MainActivity.java#L21
+[main-activity-public-key]:CineIOPeerExampleApp/src/main/java/io/cine/cineiopeerclientexampleapp/exampleapp/MainActivity.java#L27
