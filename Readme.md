@@ -31,6 +31,33 @@ repositories {
 
 Download cineio-peer-android-sdk to your application with `./gradlew build`.
 
+## Example App
+
+The best way to see it in action is to run the example app locally. There's some trickiness around rendering the peer videos. You can find the example Activity here: https://github.com/cine-io/cineio-peer-android/blob/master/CineIOPeerExampleApp/src/main/java/io/cine/cineiopeerclientexampleapp/exampleapp/MainActivity.java
+
+### Running Locally
+
+1. Clone to your local machine:
+
+  ```
+  git clone git@github.com:cine-io/cineio-peer-android.git
+  cd cineio-peer-android
+  ```
+* Register for a public and secret key at [cine.io][cine-io]
+* Update `PUBLIC_KEY` in [MainActivity][main-activity-public-key]
+* Open Android Studio
+  * Using the Quick Start panel:
+    1. click "Import project (Eclipse ADT, Gradle, etc.)"
+    * Navigate to the project on your file system. It should show the Android Studio logo.
+  * Using Menu:
+    1. Click "File:"
+    * Click "Import Project…"
+    * Navigate to the project on your file system. It should show the Android Studio logo.
+* Click Run CineIOPeerExampleApp. Gradle should automatically download the dependencies and build your project.
+* Select your device from the "Choose Device" panel. Click "OK"
+* The app automatically connects to cine.io, starts the camera, and puts you in a room called `example`.
+
+
 ## Usage
 
 ### Initialization
@@ -64,22 +91,6 @@ public class MainActivity extends Activity implements CinePeerCallback {
     }
 }
 ```
-
-## Example App
-
-The best way to see it in action is to run the example app locally. There's some trickiness around rendering the peer videos. You can find the example Activity here: https://github.com/cine-io/cineio-peer-android/blob/master/CineIOPeerExampleApp/src/main/java/io/cine/cineiopeerclientexampleapp/exampleapp/MainActivity.java
-
-### Running Locally
-
-1. Clone to your local machine:
-
-  ```
-  git clone git@github.com:cine-io/cineio-peer-android.git
-  cd cineio-peer-android
-  ```
-* Register for a public and secret key at [cine.io][cine-io]
-* Update `PUBLIC_KEY` in [MainActivity][main-activity-public-key]
-* Open with Android Studio
 
 <!-- external links -->
 [cine-io]:https://www.cine.io/
