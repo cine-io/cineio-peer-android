@@ -44,7 +44,6 @@ The best way to see it in action is to run the example app locally. There's some
   cd cineio-peer-android
   ```
 * Register for a public and secret key at [cine.io][cine-io]
-* Update `PUBLIC_KEY` in [MainActivity][main-activity-public-key]
 * Open Android Studio
   * Using the Quick Start panel:
     1. click "Import project (Eclipse ADT, Gradle, etc.)"
@@ -53,6 +52,7 @@ The best way to see it in action is to run the example app locally. There's some
     1. Click "File:"
     * Click "Import Project…"
     * Navigate to the project on your file system. It should show the Android Studio logo.
+* Update `PUBLIC_KEY` in [MainActivity][main-activity-public-key]
 * Click Run CineIOPeerExampleApp. Gradle should automatically download the dependencies and build your project.
 * Select your device from the "Choose Device" panel. Click "OK"
 * The app automatically connects to cine.io, starts the camera, and puts you in a room called `example`.
