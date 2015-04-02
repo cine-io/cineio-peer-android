@@ -2,6 +2,8 @@ package io.cine.peerclient;
 
 import android.util.Log;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.webrtc.DataChannel;
 import org.webrtc.PeerConnection;
 
@@ -11,15 +13,21 @@ import org.webrtc.PeerConnection;
 public class RTCMember {
 
     private static final String TAG = "RTCMember";
+    private final JSONObject support;
     private String sparkUUID;
     private String sparkId;
     private PeerConnection peerConnection;
     private PeerObserver peerObserver;
     private DataChannel mainDataChannel;
+    private final SignalingConnection signalingConnection;
+    private boolean iceGatheringComplete;
+    private boolean waitingToSendLocalDescription;
 
-    public RTCMember(String sparkUUID) {
+    public RTCMember(String sparkUUID, SignalingConnection signalingConnection, JSONObject support) {
         Log.v(TAG, "Creating rtc member");
         this.sparkUUID = sparkUUID;
+        this.signalingConnection = signalingConnection;
+        this.support = support;
     }
 
     public PeerConnection getPeerConnection() {
@@ -86,4 +94,37 @@ public class RTCMember {
         return mainDataChannel;
     }
 
+    public void markIceComplete() {
+        this.iceGatheringComplete = true;
+        if (this.waitingToSendLocalDescription){
+            Log.v(TAG, "markIceComplete waitingToSendLocalDescription");
+            sendLocalDescription();
+        }
+    }
+
+    public void localDescriptionReady() {
+        if (supportsTrickleIce()){
+            Log.v(TAG, "localDescriptionReady supportsTrickleIce");
+            sendLocalDescription();
+        } else if (iceGatheringComplete){
+            Log.v(TAG, "localDescriptionReady iceGatheringComplete");
+            sendLocalDescription();
+        } else {
+            Log.v(TAG, "localDescriptionReady waitingToSendLocalDescription");
+            this.waitingToSendLocalDescription = true;
+        }
+    }
+
+    private void sendLocalDescription() {
+        signalingConnection.sendLocalDescription(getSparkId(), this.peerConnection.getLocalDescription());
+    }
+
+    private boolean supportsTrickleIce() {
+        try {
+            return support.getBoolean("trickleIce");
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

@@ -56,6 +56,12 @@ class PeerObserver implements PeerConnection.Observer {
     @Override
     public void onIceGatheringChange(PeerConnection.IceGatheringState newState) {
         Log.d(TAG, "onIceGatheringChange");
+        switch (newState) {
+            case COMPLETE:
+                Log.d(TAG, "ice Gathering complete");
+                this.rtcMember.markIceComplete();
+                break;
+        }
     }
 
     @Override

@@ -49,13 +49,13 @@ public class PeerConnectionsManager {
         servers.add(new PeerConnection.IceServer(url, username, password));
     }
 
-    public void ensurePeerConnection(String otherClientUUID, String otherClientSparkId, boolean createOffer) {
-        getPeerConnection(otherClientUUID, otherClientSparkId, createOffer);
+    public void ensurePeerConnection(String otherClientUUID, String otherClientSparkId, boolean createOffer, JSONObject support) {
+        getPeerConnection(otherClientUUID, otherClientSparkId, createOffer, support);
     }
 
-    private PeerConnection createPeerConnection(String otherClientSparkUUID, String otherClientSparkId, boolean createOffer) {
+    private PeerConnection createPeerConnection(String otherClientSparkUUID, String otherClientSparkId, boolean createOffer, JSONObject support) {
         Log.d(TAG, "creating new peer connection for: " + otherClientSparkUUID);
-        RTCMember rtc = new RTCMember(otherClientSparkUUID);
+        RTCMember rtc = new RTCMember(otherClientSparkUUID, mCinePeerClient.getSignalingConnection(), support);
         rtc.setClientSparkId(otherClientSparkId);
         PeerObserver observer = new PeerObserver(rtc, mCinePeerClient);
         rtc.setPeerObserver(observer);
@@ -91,9 +91,9 @@ public class PeerConnectionsManager {
         return peerConnection;
     }
 
-    public void newIce(String otherClientSparkUUID, String otherClientSparkId, JSONObject candidateObj) {
+    public void newIce(String otherClientSparkUUID, String otherClientSparkId, JSONObject candidateObj, JSONObject support) {
         try {
-            PeerConnection pc = getPeerConnection(otherClientSparkUUID, otherClientSparkId, false);
+            PeerConnection pc = getPeerConnection(otherClientSparkUUID, otherClientSparkId, false, support);
             JSONObject j = candidateObj.getJSONObject("candidate");
             int sdpMLineIndex = j.getInt("sdpMLineIndex");
             String sdpMid = j.getString("sdpMid");
@@ -109,19 +109,19 @@ public class PeerConnectionsManager {
 
     }
 
-    private PeerConnection getPeerConnection(String otherClientSparkUUID, String otherClientSparkId, boolean createOffer) {
+    private PeerConnection getPeerConnection(String otherClientSparkUUID, String otherClientSparkId, boolean createOffer, JSONObject support) {
         RTCMember rtc = rtcMembers.get(otherClientSparkUUID);
 
         if (rtc != null) {
             rtc.setClientSparkId(otherClientSparkId);
             return rtc.getPeerConnection();
         } else {
-            return createPeerConnection(otherClientSparkUUID, otherClientSparkId, createOffer);
+            return createPeerConnection(otherClientSparkUUID, otherClientSparkId, createOffer, support);
         }
     }
 
-    public void newOffer(String otherClientSparkUUID, String otherClientSparkId, JSONObject offerObj) {
-        PeerConnection pc = getPeerConnection(otherClientSparkUUID, otherClientSparkId, false);
+    public void newOffer(String otherClientSparkUUID, String otherClientSparkId, JSONObject offerObj, JSONObject support) {
+        PeerConnection pc = getPeerConnection(otherClientSparkUUID, otherClientSparkId, false, support);
         try {
             String type = offerObj.getString("type");
             String sdpDescription = offerObj.getString("sdp");
@@ -146,8 +146,8 @@ public class PeerConnectionsManager {
 
     // notice how close this is to newOffer
     // an offer is the remote description as is an answer
-    public void newAnswer(String otherClientSparkUUID, String otherClientSparkId, JSONObject answerObj) {
-        PeerConnection pc = getPeerConnection(otherClientSparkUUID, otherClientSparkId, false);
+    public void newAnswer(String otherClientSparkUUID, String otherClientSparkId, JSONObject answerObj, JSONObject support) {
+        PeerConnection pc = getPeerConnection(otherClientSparkUUID, otherClientSparkId, false, support);
         try {
             String type = answerObj.getString("type");
             String sdpDescription = answerObj.getString("sdp");

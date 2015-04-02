@@ -205,6 +205,9 @@ public class SignalingConnection {
             j.put("client", "cineio-peer-android version-" + CinePeerClient.VERSION);
             j.put("publicKey", this.publicKey);
             j.put("uuid", this.uuid);
+            JSONObject support = new JSONObject();
+            support.put("trickleIce", true);
+            j.put("support", support);
             if(this.identity != null){
                 j.put("identity", this.identity.getIdentity());
             }
@@ -259,19 +262,19 @@ public class SignalingConnection {
     private void gotNewIce(CineMessage response) {
         String otherClientSparkId = response.getString("sparkId");
         String otherClientSparkUUID = response.getString("sparkUUID");
-        mPeerConnectionsManager.newIce(otherClientSparkUUID, otherClientSparkId, response.getJSONObject("candidate"));
+        mPeerConnectionsManager.newIce(otherClientSparkUUID, otherClientSparkId, response.getJSONObject("candidate"), response.getJSONObject("support"));
     }
 
     private void gotNewOffer(CineMessage response) {
         String otherClientSparkId = response.getString("sparkId");
         String otherClientSparkUUID = response.getString("sparkUUID");
-        mPeerConnectionsManager.newOffer(otherClientSparkUUID, otherClientSparkId, response.getJSONObject("offer"));
+        mPeerConnectionsManager.newOffer(otherClientSparkUUID, otherClientSparkId, response.getJSONObject("offer"), response.getJSONObject("support"));
     }
 
     private void gotNewAnswer(CineMessage response) {
         String otherClientSparkId = response.getString("sparkId");
         String otherClientSparkUUID = response.getString("sparkUUID");
-        mPeerConnectionsManager.newAnswer(otherClientSparkUUID, otherClientSparkId, response.getJSONObject("answer"));
+        mPeerConnectionsManager.newAnswer(otherClientSparkUUID, otherClientSparkId, response.getJSONObject("answer"), response.getJSONObject("support"));
     }
 
     private void userLeft(CineMessage response) {
@@ -294,7 +297,7 @@ public class SignalingConnection {
     private void userJoined(CineMessage response) {
         String otherClientSparkId = response.getString("sparkId");
         String otherClientSparkUUID = response.getString("sparkUUID");
-        mPeerConnectionsManager.ensurePeerConnection(otherClientSparkUUID, otherClientSparkId, true);
+        mPeerConnectionsManager.ensurePeerConnection(otherClientSparkUUID, otherClientSparkId, true, response.getJSONObject("support"));
         try {
             String room = response.getString("room");
             JSONObject j = new JSONObject();
@@ -432,7 +435,7 @@ public class SignalingConnection {
     private void roomAnnounce(CineMessage message) {
         String otherClientSparkId = message.getString("sparkId");
         String otherClientSparkUUID = message.getString("sparkUUID");
-        mPeerConnectionsManager.ensurePeerConnection(otherClientSparkUUID, otherClientSparkId, false);
+        mPeerConnectionsManager.ensurePeerConnection(otherClientSparkUUID, otherClientSparkId, false, message.getJSONObject("support"));
     }
 
 

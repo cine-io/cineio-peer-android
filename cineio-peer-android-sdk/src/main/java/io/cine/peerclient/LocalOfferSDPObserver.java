@@ -45,7 +45,7 @@ public class LocalOfferSDPObserver implements SdpObserver {
     // we might want to filter elsewhere.
     private void sendLocalDescription() {
         Log.d(TAG, "Sending " + localSDP.type);
-        mCinePeerClient.getSignalingConnection().sendLocalDescription(mRTCMember.getSparkId(), localSDP);
+        mRTCMember.localDescriptionReady();
     }
 
     @Override
